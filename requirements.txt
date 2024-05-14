@@ -1,0 +1,9 @@
+Django
+django-environ
+uWSGI
+mysql-connector-python
+Pillow
+Whoosh
+passlib
+argon2_cffi
+apscheduler

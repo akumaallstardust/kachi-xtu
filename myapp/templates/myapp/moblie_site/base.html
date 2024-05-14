@@ -1,0 +1,71 @@
+{% load static %}
+
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" type="text/css" href="{% static 'myapp/css/style_moblie.css' %}">
+  {% block head %}{% endblock %}
+  <form>{% csrf_token %}
+  </form>
+</head>
+
+<body id="main_body">
+  <header id="site-title">
+    <div class="site_header">
+      <div class="header_image">
+        <a class="header_image" href="{% url 'home' %}">
+          <img class="header_image" src="/media/test_logo.png" alt="header">
+        </a>
+      </div>
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}search/">
+        <div class="to_search_page">
+          検索
+        </div>
+      </a>
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}post/">
+        <div class="to_write_page">
+          投稿
+        </div>
+      </a>
+
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}post/">
+        <div class="to_signup_page" id="to_signup_page">
+          登録
+        </div>
+      </a>
+
+      <a style="text-decoration:none;" href="{% url 'home' %}login/">
+        <div class="to_login_page" id="to_login_page">
+          ログイン
+        </div>
+      </a>
+      <div class="to_mypage_link" id="to_mypage_box">
+        <a id="to_mypage_box_link" href="{% url 'home' %}mypage/">
+          <img class="icon_mini" style="height: 9vw; width: 9vw; margin: 0.5vw;"
+            src="/media/user_icons/user_icon_mini_{{user_id}}.png" alt="icon">
+        </a>
+      </div>
+  </header>
+  <div class="parent_box">
+    <div class="main_middle" id="main_middle">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+  {% block out_of_box %}{% endblock %}
+</body>
+<script>//競合回避のため全ての変数の末尾に_baseを付ける
+  const user_id_base = Number("{{user_id}}");
+  if (user_id_base <= 0) {
+    document.getElementById("to_mypage_box").classList.add("hidden")
+  } else {
+    document.getElementById("to_login_page").classList.add("hidden")
+    document.getElementById("to_signup_page").classList.add("hidden")
+  }
+
+</script>
+{% block script %}{% endblock %}
+
+</html>

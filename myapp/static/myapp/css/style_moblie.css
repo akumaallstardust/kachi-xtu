@@ -1,0 +1,1907 @@
+/*
+Theme Name: theme01
+*/
+@import url("https://fonts.googleapis.com/css?family=Noto+Sans+JP");
+
+* {
+  margin: 0vw;
+  padding: 0vw;
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 3vw;
+  line-height: 1.45;
+  -webkit-appearance: none;
+}
+
+button {
+}
+
+input {
+  caret-color: black;
+}
+
+input:focus {
+  outline: 0;
+}
+
+textarea {
+  caret-color: black;
+}
+
+a {
+  text-decoration: none;
+}
+
+/*ここから汎用部品*/
+.hidden {
+  display: none;
+}
+
+.center {
+  text-align: center;
+}
+
+.no_underline {
+  text-decoration: none;
+}
+
+h2 {
+  font-size: 4vw;
+  color: #ffd580;
+  text-align: center;
+}
+
+h3 {
+  font-size: 4vw;
+  color: #41717c;
+}
+
+h4 {
+  font-size: 4vw;
+  text-align: center;
+}
+
+h6 {
+  font-size: 0.62.25vw;
+  text-align: center;
+}
+
+.e_color {
+  color: #ffe599;
+}
+
+.b_color {
+  color: #41717c;
+}
+
+.g_color {
+  color: #aaa;
+}
+
+.general_button_medium {
+  color: black;
+  font-size: 3vw;
+  height: 6vw;
+  border-radius: 3vw;
+  margin: 0.25vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: #41717c;
+  border: 0.4vw;
+  border-style: outset;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+.general_button_medium:active {
+  border-style: inset;
+}
+
+.general_button_large {
+  color: black;
+  font-size: 4vw;
+  height: 8vw;
+  border-radius: 2vw;
+  margin: 0.25vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: #41717c;
+  border-style: outset;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+.general_button_large:active {
+  border-style: inset;
+}
+
+.general_input_medium {
+  font-size: 0.8vw;
+  height: 1.5vw;
+  border: 1px solid #b6c3c6;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border-radius: 0.2vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+  padding-left: 0.4vw;
+}
+
+.general_input_medium::placeholder {
+  opacity: 0.3;
+}
+
+.general_input_medium:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+  border-radius: 0.2vw;
+}
+
+.general_input_large {
+  font-size: 1.6vw;
+  height: 2vw;
+  border: 1px solid #b6c3c6;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border-radius: 0.4vw;
+  padding-left: 0.2vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.general_input_large:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+  border-radius: 0.2vw;
+}
+
+.general_textarea_dummy {
+  visibility: visible;
+  color: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  min-height: 5vw;
+}
+
+.icon_mini {
+  width: 10vw;
+  border-radius: 50%;
+}
+
+.icon_mini_square {
+  width: 8vw;
+  border-radius: 10%;
+}
+
+.icon_pico {
+  width: 8vw;
+  border-radius: 50%;
+}
+
+.pale_border {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.general_vertical_line {
+  left: 0%;
+  text-align: left;
+  display: inline-block;
+  background-color: #ffe599;
+  border: 0px;
+  border-radius: 0.5vw;
+  width: 1vw;
+  height: 6vw;
+}
+
+.general_vertical_line_b {
+  left: 0%;
+  text-align: left;
+  display: inline-block;
+  background-color: #41717c;
+  border: 0px;
+  border-radius: 0.5vw;
+  width: 1vw;
+  height: 6vw;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+/*ここからヘッダー部分*/
+.site_header {
+  background-color: white;
+  height: 10vw;
+  width: 100%;
+}
+
+.header_image {
+  color: red;
+  width: 29vw;
+  height: 10vw;
+}
+
+.to_search_page {
+  position: absolute;
+  top: 0vw;
+  left: 49vw;
+  width: 16vw;
+  height: calc(10vw - 1px);
+  font-size: 4vw;
+  line-height: 10vw;
+  text-align: center;
+  vertical-align: middle;
+  border-left: 1px solid #41717c;
+  border-bottom: 1px solid #41717c;
+  background-color: white;
+  color: #41717c;
+}
+
+.to_write_page {
+  position: absolute;
+  top: 0vw;
+  left: 65vw;
+  width: 16vw;
+  height: calc(10vw - 1px);
+  font-size: 4vw;
+  line-height: 10vw;
+  text-align: center;
+  vertical-align: middle;
+  border-left: 1px solid #41717c;
+  border-right: 1px solid #41717c;
+  border-bottom: 1px solid #41717c;
+  background-color: white;
+  color: #41717c;
+}
+
+.to_write_page:visited {
+  color: inherit;
+}
+
+.to_signup_page {
+  position: absolute;
+  top: 0vw;
+  left: 65vw;
+  width: 16vw;
+  height: calc(10vw - 1px);
+  font-size: 4vw;
+  line-height: 10vw;
+  text-align: center;
+  vertical-align: middle;
+  border-left: 1px solid #41717c;
+  border-right: 1px solid #41717c;
+  border-bottom: 1px solid #41717c;
+  background-color: white;
+  color: #41717c;
+}
+
+.to_signup_page:visited {
+  color: inherit;
+}
+
+.to_login_page {
+  position: absolute;
+  top: 0vw;
+  left: 81vw;
+  width: 16vw;
+  height: calc(10vw - 1px);
+  font-size: 3vw;
+  line-height: 10vw;
+  text-align: center;
+  vertical-align: middle;
+  border-left: 1px solid #41717c;
+  border-right: 1px solid #41717c;
+  border-bottom: 1px solid #41717c;
+  background-color: white;
+  color: #41717c;
+}
+
+.to_mypage_link {
+  left: 85%;
+  top: 0vw;
+  position: absolute;
+  text-decoration: none;
+  color: #41717c;
+}
+
+.to_mypage_link:visited {
+  color: inherit;
+}
+
+/**/
+.parent_box {
+  top: 0vw;
+  margin: 0vw;
+  display: block;
+  background-color: rgba(255, 229, 153, 0.01);
+}
+
+.main_middle {
+  margin: 0vw;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  padding: 0vw 0vw 0vw;
+  text-align: center;
+}
+
+.search_words_input_right_side_box {
+  text-align: center;
+}
+
+.search_input_right_side {
+  border: 1px solid #b6c3c6;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border-radius: 0.2vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.search_input_right_side:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+  border-radius: 0.2vw;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+/*ここからpostページ部分*/
+.gray_out_post_page {
+  position: absolute;
+  top: 0vw;
+  width: 100%;
+  height: 100%;
+  background-color: #f1f3f5;
+}
+
+.post_input_box {
+  position: absolute;
+  top: 3vw;
+  left: 5%;
+  width: 90%;
+  padding-top: 3vw;
+  border-radius: 5vw;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+.title_input_box {
+  text-align: center;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.title_input {
+  width: 100%;
+  height: 6vw;
+  border: 1px solid #b6c3c6;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border-radius: 0vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+  padding-left: 1vw;
+}
+
+.title_input::placeholder {
+  opacity: 0.3;
+}
+
+.title_input:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.content_textarea_box {
+  position: relative;
+  width: 85%;
+  margin-left: 5%;
+  margin-right: auto;
+  font-size: 3vw;
+  border: 1px solid #b6c3c6;
+  border-radius: 0vw;
+}
+
+.content_textarea_set {
+  position: relative;
+}
+
+.content_textarea {
+  position: absolute;
+  top: 0;
+  left: 0%;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  border: 0px solid #b6c3c6;
+  resize: none;
+  padding-left: 0vw;
+}
+
+.content_textarea::placeholder {
+  opacity: 0.3;
+}
+
+.content_textarea:focus {
+  outline: 0;
+}
+
+.content_textarea_dummy {
+  pointer-events: none;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  opacity: 0;
+  padding-left: 0vw;
+  padding-right: 0vw;
+  visibility: hidden;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.content_image_box {
+  width: 50%;
+  position: relative;
+}
+
+.content_image {
+  width: 100%;
+  border-bottom: 1px solid #b6c3c6;
+}
+
+.content_image_delete_button {
+  background-color: rgba(255, 255, 255, 0.5);
+  width: 5vw;
+  height: 5vw;
+  position: absolute;
+  right: -5vw;
+  top: 0vw;
+  border-top: 1px solid #b6c3c6;
+  border-bottom: 1px solid #b6c3c6;
+  border-right: 1px solid #b6c3c6;
+  border-left: 0vw;
+}
+
+.content_image_input_box {
+  will-change: scroll-position;
+  position: absolute;
+  top: 0px;
+  right: calc(-6vw + -2px);
+  width: 6vw;
+  color: #ffd580;
+  margin-top: -1px;
+  font-size: 2.5vw;
+  border: 0.5vw;
+  border-radius: 0vw;
+  border-style: outset;
+  background-color: white;
+  border-top: 1px solid #b6c3c6;
+  border-bottom: 1px solid #b6c3c6;
+  border-right: 1px solid #b6c3c6;
+  border-left: 1px solid #b6c3c6;
+}
+
+.content_image_input_label {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+
+.rest_char_count {
+  display: none;
+  position: relative;
+  left: 5%;
+  width: 19vw;
+  border-bottom: 1px solid #b6c3c6;
+  border-right: 1px solid #b6c3c6;
+  border-left: 1px solid #b6c3c6;
+  color: #ffaa80;
+}
+
+.overview_input_box {
+  position: relative;
+  font-size: 1rem;
+  left: 5%;
+  width: 90%;
+  min-height: 10vw;
+}
+
+.overview_textarea {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0.25vw 0.1vw;
+  top: 0vw;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  height: 100%;
+  background-color: transparent;
+  border: 1px solid #b6c3c6;
+  border-radius: 0vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.overview_textarea:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.overview_textarea::placeholder {
+  opacity: 0.3;
+}
+
+.overview_textarea_dummy {
+  text-align: left;
+  overflow: hidden;
+  visibility: hidden;
+  box-sizing: border-box;
+  padding: 0.25vw 0.1vw;
+  min-height: 5vw;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.tags_box {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 0vw;
+  left: 0%;
+  width: 87%;
+  border: 1px solid #b6c3c6;
+  margin-left: 4vw;
+  margin-right: auto;
+  padding: 0.5vw 2vw;
+  align-items: center;
+}
+
+.tag_input_box {
+  position: relative;
+  width: 20vw;
+  height: 5vw;
+  margin-bottom: 0.5vw;
+  margin-right: 4vw;
+}
+
+.tag_input {
+  background-color: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5vw;
+  border: 1px solid #b6c3c6;
+  border-radius: 0.5vw;
+  font-size: 3vw;
+  margin: 0vw;
+  padding-left: 0.5vw;
+}
+
+.tag_input::placeholder {
+  opacity: 0.3;
+}
+
+.tag_input:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.add_tag_button {
+  color: #ffd580;
+  font-size: 4vw;
+  width: 8vw;
+  height: 8vw;
+  border-radius: 50%;
+  border: 1px solid;
+  background-color: white;
+  border-color: #aaa black black #aaa;
+}
+
+.add_tag_button {
+  border-color: black #aaa #aaa black;
+}
+
+.post_button_box {
+  text-align: center;
+  margin: 0vw;
+  padding: 3%;
+}
+
+.post_button {
+  color: #ffd580;
+  font-size: 4vw;
+  width: 12vw;
+  height: 6vw;
+  padding-bottom: 6vw;
+  border-radius: 2vw;
+  border: 1px solid #aaa;
+  background-color: white;
+  border-color: #aaa black black #aaa;
+}
+
+.post_button:active {
+  border-color: black #aaa #aaa black;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+/*ここからログイン、サインアップページ*/
+.gray_out_login_page {
+  position: absolute;
+  top: 0vw;
+  width: 100%;
+  height: 100%;
+  background-color: #f1f3f5;
+}
+
+.login_box {
+  position: absolute;
+  top: 3vw;
+  left: 5%;
+  width: 90%;
+  padding-top: 3vw;
+  border-radius: 5vw;
+  background-color: #ffffff;
+  text-align: center;
+}
+
+.username_input_box {
+  text-align: center;
+}
+
+.mailaddress_input_box {
+  text-align: center;
+}
+
+.mailaddress_input {
+  width: 80vw;
+  background-color: #f5f5f5;
+  border: 1px #41717c;
+  padding-left: 3vw;
+  height: 8vw;
+  border-radius: 3vw;
+  font-size: 3.5vw;
+}
+
+.password_input_box {
+  text-align: center;
+}
+
+.password_input {
+  width: 80vw;
+  background-color: #f5f5f5;
+  border: 1px #41717c;
+  padding-left: 3vw;
+  height: 8vw;
+  border-radius: 3vw;
+  font-size: 3.5vw;
+}
+
+.login_to_signup {
+  margin-top: 10vw;
+  font-size: 1.6vw;
+  width: 30vw;
+  padding: 1.5vw 0vw;
+  border: 0px solid #b6c3c6;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: white;
+  background-color: #598994;
+  border-radius: 0.4vw;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.login_to_signup:visited {
+  color: white;
+}
+
+.signup_form_box {
+  text-align: center;
+}
+
+.signup_button {
+  color: #ffe599;
+  font-size: 1.5vw;
+  width: 8vw;
+  height: 4vw;
+  border-radius: 2vw;
+  background-color: white;
+  border-color: #aaa;
+}
+
+.signup_button:active {
+}
+
+/*検索ボックス*/
+.datailed_search_box {
+  border-top: 0.8vw solid #ffe599;
+  border-image-slice: 1;
+  text-align: center;
+  width: 92%;
+  padding-top: 1vw;
+  padding-bottom: 1vw;
+  padding-left: 2vw;
+  padding-right: 2vw;
+  background-color: white;
+  margin-bottom: 3vw;
+  margin-top: 2vw;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.datailed_search_input_box {
+  text-align: left;
+}
+
+.datailed_search_input {
+  width: 80vw;
+  font-size: 0.6vw;
+  height: 6vw;
+  border: 1px solid #aaa;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: white;
+  border-radius: 1vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+  padding-left: 0.4vw;
+}
+
+.datailed_search_input::placeholder {
+  opacity: 0.3;
+}
+
+.datailed_search_input:focus {
+  box-shadow: 0 0 0 1vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.search_order_select_box {
+  text-align: center;
+}
+
+.datailed_search_button_box {
+  text-align: center;
+  margin-top: 3vw;
+}
+
+.datailed_search_button {
+  width: 20vw;
+  font-size: 3vw;
+  height: 6vw;
+  border-radius: 1vw;
+  margin: 0.25vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: #41717c;
+  border: 0.4vw;
+  border-style: outset;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+/*投稿表示*/
+.main_middle_serach {
+  background-color: #f1f3f5;
+  width: 100%;
+  height: 120%;
+}
+.transition_page_box {
+  width: 30vw;
+  height: 6vw;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 4vw;
+}
+
+.current_page_box {
+  position: absolute;
+  left: 45vw;
+  width: 10vw;
+  height: 6vw;
+  border: 0.5vw solid #ffe599;
+  border-bottom-width: 0.5vw;
+  border-top-width: 0.5vw;
+  color: #ffd580;
+  border-color: #ffe599;
+  background-color: white;
+  font-size: 4vw;
+  line-height: 3.5vw;
+}
+
+.previous_page_button {
+  position: absolute;
+  left: 30vw;
+  width: 15vw;
+  height: 6vw;
+  background-color: white;
+  color: #41717c;
+  border: 0.5vw solid #ffe599;
+  border-right-width: 0px;
+  font-size: 4vw;
+  line-height: 3.5vw;
+  border-top-left-radius: 3vw;
+  border-bottom-left-radius: 3vw;
+}
+
+.next_page_button {
+  position: absolute;
+  left: 55vw;
+  width: 15vw;
+  height: 6vw;
+  background-color: white;
+  color: #41717c;
+  border: 0.5vw solid #ffe599;
+  border-left-width: 0px;
+  font-size: 4vw;
+  line-height: 3.5vw;
+  border-top-right-radius: 3vw;
+  border-bottom-right-radius: 3vw;
+}
+
+.no_content {
+  margin-top: 5vw;
+}
+
+.post_display_box {
+  border-top: 0.8vw solid rgba(255, 229, 153, 0.5);
+  position: relative;
+  margin-bottom: 2vw;
+  width: 95%;
+  left: 2.5%;
+  padding-top: 0vw;
+  padding-bottom: 0vw;
+  background-color: white;
+}
+
+.post_box_left {
+  text-align: left;
+  display: inline-block;
+  position: relative;
+  vertical-align: top;
+  left: 0%;
+  width: 12%;
+}
+
+.post_box_right {
+  display: inline-block;
+  position: relative;
+  vertical-align: top;
+  text-align: left;
+  left: 0%;
+  width: 84%;
+  height: 100%;
+  padding-top: 5vw;
+}
+
+.listed_post_icon_box {
+  text-align: right;
+  margin-top: 0.5vw;
+}
+
+.listed_post_icon {
+  position: relative;
+  display: inline-block;
+  right: 0%;
+  vertical-align: middle;
+}
+
+.listed_post_username {
+  left: 0.5vw;
+  top: 0vw;
+  font-size: 3vw;
+  position: absolute;
+  vertical-align: middle;
+  color: #598994;
+  text-decoration: none;
+}
+
+.listed_post_username:visited {
+  color: #598994;
+}
+
+.post_title {
+  font-weight: bold;
+  text-align: left;
+  position: relative;
+  display: block;
+  left: 4vw;
+  font-size: 3.5vw;
+  text-decoration: none;
+  color: #41717c;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 90%;
+}
+
+.post_title:visited {
+  color: #41717c;
+}
+
+.listed_post_date {
+  left: 0;
+  top: 0px;
+  left: 4vw;
+  font-size: 2vw;
+  position: relative;
+  color: black;
+  margin-bottom: 1vw;
+}
+
+.post_overview_box {
+  margin-left: 4vw;
+  width: 70vw;
+  margin-bottom: 2vw;
+}
+
+.post_title_overview {
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-size: 3vw;
+}
+
+.post_content_box {
+  text-align: left;
+  width: 98%;
+  padding-left: 0vw;
+  padding-right: 0vw;
+}
+
+.listed_post_content {
+  display: block;
+  position: relative;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 0.5vw;
+  padding: 0.8vw;
+  margin-left: 0;
+  width: 90%;
+  left: 5%;
+  font-size: 3.2vw;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.listed_post_image {
+  width: 100%;
+}
+
+.content_button_box {
+  text-align: right;
+  display: block;
+  height: 6vw;
+  width: 100%;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.like_button_box {
+  display: block;
+  position: absolute;
+  margin-top: 0vw;
+  height: 6vw;
+  left: 5.5%;
+  width: 20%;
+  text-align: left;
+}
+
+.review_count {
+  display: inline-block;
+  position: relative;
+  top: -2vw;
+}
+
+.like_button {
+  display: inline-block;
+  border: 0;
+  width: 6vw;
+  height: 6vw;
+  border-radius: 0vw;
+  background-color: transparent;
+}
+
+.dislike_button_box {
+  height: 6vw;
+  display: block;
+  position: absolute;
+  margin-top: 0vw;
+  width: 20%;
+  left: 25.5%;
+  text-align: left;
+  border-left: 1px solid #e0e0e0;
+}
+
+.dislike_button {
+  width: 6vw;
+  height: 6vw;
+  border-radius: 0vw;
+  background-color: transparent;
+}
+
+.open_comment_button_box {
+  display: block;
+  position: absolute;
+  margin-top: 0vw;
+  left: 45.5%;
+  width: 30%;
+  height: 6vw;
+  border-left: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.open_comment_button {
+  border: 0px;
+  height: 6vw;
+  width: 100%;
+  color: #41717c;
+  background-color: transparent;
+}
+
+.open_content_button_box {
+  display: inline-block;
+}
+
+.share_button_box {
+  display: none;
+  position: absolute;
+  margin-top: 0vw;
+  left: 65.5%;
+  width: 20%;
+  height: 6vw;
+  border-left: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.share_button {
+  border: 0px;
+  height: 6vw;
+  width: 100%;
+  color: #41717c;
+  background-color: transparent;
+}
+
+.report_button_box {
+  display: block;
+  position: absolute;
+  margin-top: 0vw;
+  left: 75.5%;
+  width: 19.6%;
+  height: 6vw;
+  border-left: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.report_button {
+  border: 0px;
+  height: 6vw;
+  width: 100%;
+  color: #41717c;
+  background-color: transparent;
+}
+
+.delete_post_button_box {
+  display: block;
+  position: absolute;
+  right: 0vw;
+  bottom: 0vw;
+}
+
+.delete_post_button {
+  width: 7vw;
+  background-color: red;
+}
+
+.open_content_button_box {
+  text-align: center;
+  margin-top: 1vw;
+  margin-bottom: 1vw;
+}
+
+.open_content_button {
+  width: 20vw;
+  font-size: 3vw;
+  height: 6vw;
+  border-radius: 1vw;
+  margin: 0.25vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: #41717c;
+  border: 0.4vw;
+  border-style: outset;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+.post_tags_box {
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 0vw;
+  border-bottom: 1px solid #e0e0e0;
+  margin: 0% 0%;
+  padding: 0.5vw 0.2vw;
+  color: #41717c;
+  align-items: center;
+  margin-bottom: 0.5vw;
+}
+
+.post_tag_box {
+  height: 3vw;
+  margin-left: 0.5vw;
+  border-radius: 1vw;
+  padding-left: 0.4vw;
+  padding-right: 0.4vw;
+  padding-bottom: 0.3vw;
+}
+
+.post_tag {
+  position: relative;
+  top: -1vw;
+  font-size: 2.5vw;
+  text-decoration: none;
+  color: #598994;
+}
+
+/*コメント表示*/
+
+.gray_out_search_page {
+  position: fixed;
+  top: 0vw;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.discussion_box {
+  text-align: center;
+  position: fixed;
+  width: 92.5%;
+  top: 2.5%;
+  left: 5%;
+  padding-left: 0.5vw;
+  height: 90%;
+  border-radius: 5vw;
+  overflow-y: scroll;
+  background-color: white;
+}
+
+.close_discussion_box_button_box {
+  position: fixed;
+  left: 89%;
+  top: 0.2%;
+}
+
+.close_discussion_box_button {
+  color: #ffe599;
+  font-size: 10vw;
+  width: 10vw;
+  height: 10vw;
+  border-radius: 50%;
+  border-style: outset;
+  background-color: white;
+  border-color: #aaa;
+}
+
+.close_discussion_box_button_inside {
+  position: fixed;
+  left: 88.69%;
+  top: -2.8vw;
+  width: 0;
+  height: 0;
+  color: #ffe599;
+  border: 0px;
+  background-color: transparent;
+  pointer-events: none;
+  font-size: 10.45vw;
+}
+
+.add_comment_box {
+  text-align: center;
+  position: relative;
+  top: 3vw;
+  left: 10%;
+  width: 80%;
+  margin-bottom: 4vw;
+}
+
+.add_comment_textarea_box {
+  position: relative;
+}
+
+.add_comment_textarea {
+  left: 0%;
+  top: 0%;
+  padding-left: 1vw;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border: 1px solid #b6c3c6;
+  border-radius: 2vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.add_comment_textarea:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.post_comment_button {
+  margin-top: 2vw;
+  color: black;
+  font-size: 3vw;
+  width: 12vw;
+  height: 6vw;
+  border-radius: 3vw;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+.comment_box {
+  text-align: center;
+  background-color: white;
+  border-top: 1px solid #b6c3c6;
+  padding-top: 0.5vw;
+  margin-bottom: 0.5vw;
+  padding-bottom: 0.5vw;
+}
+
+.comment_user_box {
+  position: relative;
+  margin-top: 0.2vw;
+  top: 0.2vw;
+  left: 0vw;
+  text-align: left;
+  padding-left: 1.5vw;
+  padding-bottom: 0.6vw;
+  border-bottom: 0.5vw solid rgba(255, 229, 153, 0.7);
+}
+
+.comment_user_icon {
+  width: 8vw;
+  height: 8vw;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.comment_username {
+  height: 6vw;
+  left: 1vw;
+  font-size: 3vw;
+  display: inline-block;
+  color: #41717c;
+  text-decoration: none;
+  vertical-align: top;
+}
+
+.report_comment_button_box {
+  position: absolute;
+  margin-top: 0vw;
+  right: 0vw;
+  width: 10vw;
+  height: 6vw;
+  margin-top: -9.7vw;
+  border-left: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.report_comment_button {
+  border: 0px;
+  height: 6vw;
+  width: 100%;
+  color: #41717c;
+  background-color: transparent;
+}
+
+.comment_content {
+  font-size: 2.5vw;
+  text-align: left;
+  padding-left: 0.5vw;
+}
+
+.open_child_comment_button_box {
+  width: 24vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.open_child_comment_button {
+  color: black;
+  font-size: 3vw;
+  width: 24vw;
+  height: 4.5vw;
+  border-radius: 2.25vw;
+  display: flex;
+  /* Flexboxコンテナとして設定 */
+  justify-content: center;
+  /* 水平方向に中央寄せ */
+  align-items: center;
+  /* 垂直方向に中央寄せ */
+  background-color: white;
+  border-color: #ffe599;
+  margin-bottom: 1vw;
+}
+
+.child_comment_box {
+  width: 90%;
+  margin-left: 10%;
+}
+
+.add_child_comment_box {
+}
+
+.add_child_comment_textarea_box {
+  position: relative;
+}
+
+.add_child_comment_textarea {
+  left: 0%;
+  top: 0%;
+  padding-left: 1vw;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: transparent;
+  border: 1px solid #b6c3c6;
+  border-radius: 2vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.add_child_comment_textarea:focus {
+  box-shadow: 0 0 0 0.2vw rgba(255, 229, 153, 0.3);
+  outline: 0;
+}
+
+.add_child_comment_button {
+  color: black;
+  font-size: 3vw;
+  width: 12vw;
+  height: 6vw;
+  border-radius: 3vw;
+  margin: 1vw;
+  top: 1vw;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+/*ユーザーページ*/
+.gray_out_user_page {
+  background-color: #f1f3f5;
+  width: 100%;
+  height: 120%;
+}
+
+.user_infomation_box {
+  position: absolute;
+  top: 3vw;
+  left: 0%;
+  width: 100%;
+  padding-top: 0vw;
+  border-radius: 5vw;
+  border-top-right-radius: 0vw;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+.user_name_icon_box {
+  position: relative;
+  height: 17vw;
+  width: 100%;
+  margin-bottom: 0vw;
+}
+
+.user_page_icon_box {
+  position: absolute;
+  top: 1vw;
+  left: 5vw;
+  border: 0.5vw solid white;
+  border-radius: 50%;
+  width: 15vw;
+  height: 15vw;
+}
+
+.user_page_icon {
+  width: 15vw;
+  height: 15vw;
+  border-radius: 50%;
+}
+
+.user_page_name {
+  position: absolute;
+  font-size: 4vw;
+  left: 24vw;
+  top: 2vw;
+  color: black;
+}
+
+.user_page_follow_box {
+  position: absolute;
+  right: 15vw;
+  width: 20vw;
+  text-align: center;
+  height: 6vw;
+}
+
+.user_page_follow_button {
+  display: inline-block;
+  vertical-align: middle;
+  color: white;
+  border: 0;
+  width: 14vw;
+  height: 100%;
+  background-color: #41717c;
+}
+
+.user_page_follow_button_followed {
+  display: inline-block;
+  vertical-align: middle;
+  color: #d3d3d3;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 4vw;
+  background-color: #003366;
+}
+
+.user_report_button_box {
+  position: absolute;
+  left: 20vw;
+  top: 10vw;
+  width: 20vw;
+  text-align: center;
+  height: 6vw;
+}
+
+.user_report_button {
+  display: inline-block;
+  vertical-align: middle;
+  color: #41717c;
+  border: 1px solid #41717c;
+  width: 14vw;
+  height: 100%;
+  background-color: white;
+}
+
+.user_report_button:active {
+  outline: 0;
+  border: 1px solid #41717c;
+}
+
+.user_page_user_id {
+  position: absolute;
+  font-size: 3vw;
+  right: 2vw;
+  bottom: 2vw;
+  color: #aaa;
+}
+
+.user_page_profile {
+  font-size: 4vw;
+  width: 97%;
+  border-top: 1px solid #e0e0e0;
+  margin-bottom: 0vw;
+  padding-left: 3%;
+  min-height: 10vw;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.user_page_option_box {
+  width: 100%;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 5vw;
+  min-height: 50vw;
+}
+
+.user_page_option_box_left {
+  vertical-align: top;
+  position: absolute;
+  width: 25%;
+  left: 0vw;
+  font-size: 3vw;
+  border-right: 1px solid #e0e0e0;
+}
+
+.user_page_option_left {
+  width: 100%;
+  border: 0;
+  border: 1px solid #e0e0e0;
+  height: 10vw;
+  font-size: 3vw;
+  text-align: center;
+  color: black;
+  background-color: white;
+}
+
+.user_page_option_left:active {
+  border: 2px solid #e0e0e0;
+}
+
+.user_page_option_left_selected {
+  width: 100%;
+  border: 1px solid black;
+  height: 10vw;
+  font-size: 3vw;
+  text-align: center;
+  color: white;
+  background-color: #41717c;
+}
+
+.user_page_option_left_selected:active {
+  border: 2px solid black;
+}
+
+.user_page_option_box_right {
+  position: relative;
+  border-left: 1px solid #e0e0e0;
+  width: calc(75% -1px);
+  left: 25%;
+  font-size: 3vw;
+}
+
+.user_page_listed_title_box {
+  margin: 0;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user_page_listed_user_box {
+  position: relative;
+  min-height: 10vw;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user_page_listed_icon {
+  position: absolute;
+  margin: 0;
+  left: 1vw;
+  top: 1vw;
+  width: 8vw;
+  border-radius: 50%;
+}
+
+.user_page_listed_username {
+  margin-left: 10vw;
+  position: relative;
+  text-align: left;
+  color: #598994;
+}
+
+.user_page_listed_username:active {
+  color: #598994;
+}
+
+.my_page_option_box {
+  border-top: 1px solid #e0e0e0;
+  margin-bottom: 5vw;
+}
+
+.my_page_option {
+  padding-top: 3vw;
+  padding-bottom: 3vw;
+  padding-left: 5vw;
+  color: #598994;
+  position: relative;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 4vw;
+}
+
+.my_page_option:visited {
+  color: #598994;
+}
+
+.user_other_box {
+  margin-top: 10vw;
+  margin-left: 10vw;
+  margin-right: 10vw;
+  border: 1px solid #aaa;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+.gray_out_change_user_info_page {
+  position: absolute;
+  top: 0vw;
+  width: 100%;
+  height: 100%;
+  background-color: #f1f3f5;
+}
+
+.change_user_info_box {
+  position: relative;
+  top: 3vw;
+  left: 0%;
+  width: 100%;
+  min-height: 70vw;
+  padding-top: 0vw;
+  border-radius: 5vw;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+.change_icon_input_box {
+  position: absolute;
+  top: 0px;
+  left: 0vw;
+  width: 35vw;
+  height: 39vw;
+  border-radius: 3vw;
+  background-color: white;
+  border-top: 1px solid #b6c3c6;
+  border-bottom: 1px solid #b6c3c6;
+  border-right: 1px solid #b6c3c6;
+  border-left: 1px solid #b6c3c6;
+}
+
+.change_icon_input_label {
+  width: 35vw;
+  height: 39vw;
+}
+
+.change_icon_input_label_img {
+  display: block;
+  position: relative;
+  border-radius: 50%;
+  margin-left: 2.5vw;
+  width: 30vw;
+  top: 1vw;
+  display: block;
+  position: relative;
+  border-radius: 50%;
+}
+
+.change_icon_input_label_button {
+  text-align: center;
+  bottom: 0vw;
+  display: block;
+  position: absolute;
+  padding-top: 1vw;
+  padding-bottom: 1vw;
+  border-radius: 3vw;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  width: 100%;
+  height: 5vw;
+  color: #ffd580;
+  border-top: 1px solid #b6c3c6;
+}
+
+.change_username_box {
+  top: 3vw;
+  position: relative;
+  left: 35vw;
+  width: 60vw;
+}
+
+.change_username_input {
+  top: 1vw;
+  position: absolute;
+  left: 6vw;
+  width: 50vw;
+  background-color: #f5f5f5;
+  border: 1px solid #41717c;
+  padding-left: 3vw;
+  height: 6vw;
+  border-radius: 3vw;
+  font-size: 3.5vw;
+}
+
+.change_username_input:focus {
+  box-shadow: 0 0 0 0.4vw rgba(65, 113, 124, 0.3);
+  outline: 0;
+  border: 1px solid #41717c;
+}
+
+.change_username_input::placeholder {
+  opacity: 0.3;
+}
+
+.change_profile_box {
+  position: relative;
+  top: 8vw;
+  position: relative;
+  left: 35vw;
+  width: 60vw;
+}
+
+.change_profile_texarea {
+  background-color: #f5f5f5;
+  border: 1px solid #41717c;
+  font-size: 3.5vw;
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0.25vw 0.1vw;
+  top: 7vw;
+  left: 5vw;
+  width: 50vw;
+  height: 25vw;
+  border-radius: 0vw;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  resize: none;
+}
+
+.change_profile_texarea:focus {
+  box-shadow: 0 0 0 0.4vw rgba(65, 113, 124, 0.3);
+  outline: 0;
+  border: 1px solid #41717c;
+}
+
+.change_profile_texarea::placeholder {
+  opacity: 0.3;
+}
+
+.change_user_info_button_box {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  top: 60vw;
+}
+
+.change_user_info_button {
+  width: 20vw;
+  font-size: 3vw;
+  height: 6vw;
+  border-radius: 1vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: #41717c;
+  border: 0.4vw;
+  border-style: outset;
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+
+.delete_account_password_box {
+  top: 3vw;
+  position: relative;
+  left: 15vw;
+  width: 60vw;
+}
+
+.delete_account_password_input {
+  top: 1vw;
+  position: absolute;
+  left: 6vw;
+  width: 50vw;
+  background-color: #f5f5f5;
+  border: 1px solid #41717c;
+  padding-left: 3vw;
+  height: 6vw;
+  border-radius: 3vw;
+  font-size: 3.5vw;
+}
+
+.delete_account_button_box {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  top: 60vw;
+}
+
+.delete_account_button {
+  width: 30vw;
+  font-size: 3vw;
+  height: 6vw;
+  border-radius: 1vw;
+  padding-left: 0.5vw;
+  padding-right: 0.5vw;
+  color: black;
+  border: 0.4vw;
+  border-style: outset;
+  background-color: red;
+  border-color: red;
+}
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+
+.report_category_select_box {
+  display: inline-block;
+  position: relative;
+  top: -1.5vw;
+}
+
+.report_category_select {
+  border: 1px solid #e0e0e0;
+  outline: 0;
+}
+
+.report_category_select:focus {
+  border: 1px solid #e0e0e0;
+}
+
+.report_category_select:hover {
+  border: 1px solid #e0e0e0;
+}
+
+
+/*轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟
+轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟轟*/
+

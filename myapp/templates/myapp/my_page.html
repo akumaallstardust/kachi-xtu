@@ -1,0 +1,86 @@
+{% extends 'myapp/base.html' %}
+
+
+{% block content %}
+<div class="user_infomation_box">
+    <div class="user_name">{{username}}</div>
+    <br>
+    <div class="user_post_box" id="user_post_box">投稿作品</div>
+</div>
+<script>
+    function addbr(el, br_conut = 1) {
+        for (let i = 0; i < brconut; i++) {
+            let new_br = document.createElement("br")
+            el.appendChild(new_br)
+        }
+    }
+    const user_id = Number("{{user_id}}")
+    const main_object = document.getElementById("user_post_box");
+    var dieplayed_post_number = Number(`{{amount_of_displayed_post}}`);
+    var content_id_list = split_by_less_than(`{{content_id_combined}}`);
+    var title_list = split_by_less_than(`{{title_combined}}`);
+    var content_list = split_by_less_than(`{{content_combined}}`);
+    var user_id_list = split_by_less_than(`{{user_id_combined}}`);
+    var overview_list = split_by_less_than(`{{overview_combined}}`);
+    var word_count_list = split_by_less_than(`{{word_count_combined}}`);
+    var tags_list = split_by_less_than(`{{tags_combined}}`)
+    if(user_id<=0){
+        location.href=("{% url 'home' %}signup/")
+    }
+    function set_text_with_newline(text) {
+        var split_text = text.split(/\r\n|\n/);
+        var return_text = ""
+        for (let i = 0; i < split_text.length; i++) {
+            return_text += (split_text[i] + "<br>")
+        }
+        return return_text
+    }
+    function split_by_less_than(text) {
+        let result = text.split("&lt;");
+        return result;
+    }
+    function open_content(listed_content_number) {
+        let content = document.getElementById(`listed_post_content_${listed_content_number}`)
+        let button = document.getElementById(`open_content_button_${listed_content_number}`)
+        if (content.style.display == "none") {
+            content.style.display = "inline"
+            button.textContent = "閉じる"
+        }
+        else {
+            content.style.display = "none"
+            button.textContent = "読む"
+        }
+    }
+    if (dieplayed_post_number == -1) {
+    }
+    else if (dieplayed_post_number == 0) {
+    }
+    else if (dieplayed_post_number >= 1) {
+        for (let i = 0; i < dieplayed_post_number; i++) {
+            let post = document.createElement("div")
+            post.id = `listed_post_${i + 1}`
+            post.className = "listed_title_box"
+            main_object.appendChild(post)
+
+            let post_content_id = document.createElement("div")
+            post_content_id.id = `content_id_of_displayed_post_${i + 1}`
+            post_content_id.textContent = content_id_list[i]
+            post_content_id.classList.add("hidden")
+            post.appendChild(post_content_id)
+
+            let post_title = document.createElement("a")
+            post_title.href = `{% url 'home' %}post/${content_id_list[i]}/`
+            post_title.id = `listed_post_title_${i + 1}`
+            post_title.className = "post_title"
+            post_title.textContent = title_list[i]
+            post.appendChild(post_title)
+        }
+    }
+</script>
+{% endblock %}
+{% block sub_left %}
+<a href="{% url 'home' %}changeuserinfo/" class="no_underline">ユーザー情報変更</a>
+<br>
+<a href="{% url 'home' %}changepassword/" class="no_underline">パスワード変更</a>
+<br>
+{% endblock %}
