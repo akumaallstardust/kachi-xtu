@@ -20,7 +20,7 @@ media_path=str(Path(__file__).resolve().parent.parent)+"\\media_local"
 def connect_to_database():
     return mysql.connector.connect(
         #user="root", password="", host="127.0.0.1", database="test01", port='3306'
-        user=env('MYSQL_USER'), password=env('MYSQL_PASSWORD'), host="127.0.0.1", database=env('deploy_web_sample_project'), port=env('DB_CONTAINER_PORT')
+        user=env('MYSQL_USER'), password=env('MYSQL_PASSWORD'), host="127.0.0.1", database=env('MYSQL_DATABASE'), port=env('DB_CONTAINER_PORT')
     )
     
 def create_content_dict(
