@@ -23,7 +23,7 @@ user_index_schema = Schema(
     user_id=ID(stored=True),
     username_whole=KEYWORD(analyzer=analysis.StandardAnalyzer(stoplist=None)),
     username_n_gram=KEYWORD(analyzer=analysis.StandardAnalyzer(stoplist=None)),
-    mailaddress_whole=KEYWORD(analyzer=analysis.StandardAnalyzer(stoplist=None)),
+    #mailaddress_whole=KEYWORD(analyzer=analysis.StandardAnalyzer(stoplist=None)),
     for_all=KEYWORD(analyzer=analysis.StandardAnalyzer(stoplist=None))
     )
 
@@ -145,7 +145,6 @@ def create_n_gram(text: str, min_gram: int, max_gram: int, includ_whole_text=Fal
         analysis_of_text.add(text)
     return analysis_of_text
 
-
 def add_post_to_index(post: list):
     # start = time.time()
     content_id = int(post[0])
@@ -197,7 +196,7 @@ def add_user_to_index(user: list):
     # start = time.time()
     user_id = int(user[0])
     username_whole = unicodedata.normalize('NFKC', user[1]).replace("\n", "").replace("\r", "")
-    mailaddress_whole=unicodedata.normalize('NFKC', user[2]).replace("\n", "").replace("\r", "")
+    #mailaddress_whole=unicodedata.normalize('NFKC', user[2]).replace("\n", "").replace("\r", "")
     if not os.path.exists(index_dir):
         os.mkdir(index_dir)
     if whoosh.index.exists_in(dirname=index_dir, indexname="user_index"):
@@ -216,7 +215,7 @@ def add_user_to_index(user: list):
         username_n_gram=" ".join(
             create_n_gram(text=username_whole,min_gram=1,max_gram=30,includ_whole_text=True)
         ),
-        mailaddress_whole=mailaddress_whole,
+        #mailaddress_whole=mailaddress_whole,
         for_all="inculde_all"
     )
     writer.commit()  # 必ず必要

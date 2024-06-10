@@ -18,8 +18,8 @@ def read_and_convert(file_path):
     return converted_content
 
 # 変換したいファイルのパス
-file_path = "C:\\Users\\user02\\Documents\\my_app_r\\style_moblie.css"
-
+file_path = "C:\\Users\\user02\\Documents\\kachi-xtu_django_dev\\myapp\\my_log\\sikutyousonn.csv"
+"""
 # 変換結果を取得
 converted = read_and_convert(file_path)
 # テキストファイルを作成して文字列を書き込む関数
@@ -35,4 +35,17 @@ file_path = 'C:\\Users\\user02\\Documents\\sss.txt'
 
 # 関数を呼び出してファイルに書き込む
 write_to_file(file_path, converted)
+"""
+with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+    content = file.read()
 
+content=content.replace('"', '')
+content_split=content.split("\n")
+def write_to_file(file_path, text):
+    # 'w'モードでファイルを開く（ファイルが存在しない場合は新しく作成される）
+    with open(file_path, 'w') as file:
+        file.write(text)  # 文字列をファイルに書き込む
+file_path = 'C:\\Users\\user02\\Documents\\sssddd.txt'
+
+# 関数を呼び出してファイルに書き込む
+write_to_file(file_path,content)

@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpRequest
 from django.http.response import JsonResponse
+from django.utils.safestring import mark_safe
 from passlib.hash import argon2
 import re
 import os
@@ -15,17 +16,17 @@ from pathlib import Path
 from . import my_search
 from . import my_functions
 import sys
-sys.path.append('../')
-import secret_values
 from pathlib import Path
 from django.views.decorators.csrf import csrf_exempt
 import base64
-
+import environ
+env = environ.Env()
+environ.Env.read_env(os.path.join(environ.Path(__file__) - 2, '.env'))
 site_url="http://192.168.1.16:8000/"
 current_path=str(Path(__file__).resolve().parent) + ("/indices")
 t_delta = datetime.timedelta(hours=9)
 JST = datetime.timezone(t_delta, "JST")
-secret_values.password_salt
+password_salt=env('PASSWORD_SALT')
 session_duration = 7 * 24 * 60 * 60
 redirect_to_toppage = HttpResponse(
     "<head><meta http-equiv='refresh' content='0; url="+site_url+"'></head>"
@@ -40,7 +41,7 @@ redirect_to_signup = HttpResponse(
 
 
 class connection_to_user_db:  # 基本的にはこれを使ってセッション管理 update_valuesを無効化済み　後で絶対戻す
-    def __init__(self, request: HttpRequest | None = None,request_json_data: dict | None = None,get_user_setting=False,from_app_flag=False):  # 最初にユーザー確認
+    def __init__(self, request: HttpRequest | None = None,request_json_data: dict | None = None,get_user_setting=False,from_app_flag=False,get_unread_notification_flag=True):  # 最初にユーザー確認
         self.cnx = my_functions.connect_to_database()
         self.cursor = self.cnx.cursor(buffered=True)
         if request is not None:
@@ -53,6 +54,7 @@ class connection_to_user_db:  # 基本的にはこれを使ってセッション
             self.session.authentication_session(self.cursor)
             if(get_user_setting):
                 self.session.set_user_setting_dict(self.cursor)
+
     def terminate_connection(self) -> None:  # DBとの接続解除
         self.cursor.close()
         self.cnx.close()
@@ -77,15 +79,15 @@ class connection_to_user_db:  # 基本的にはこれを使ってセッション
         return self.set_response(
             render(request=requset,
             template_name=html_file,
-            context=self.session.user_id_dict,
+            context=self.session.user_basic_dict,
             )
         )
-
 
 class session_data:  # 基本的にcconnection_to_user_dbで使う
     user_id=-1
     self_declaration_user_id=-1
-    user_id_dict = {"user_id": str}
+    user_basic_dict = {"user_id": str,"unread_notification_flag":"n"}
+    unread_notification_flag=False
     user_setting_dict={"auto_comment_open":str,"defalt_exclude_words":str}
     value_1=0
     value_2=0
@@ -151,7 +153,7 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
                 self.device_unique_id=request_json_data["device_unique_id"]
 
     def update_values(self, cursor,create_record=False):  # この後commitしなきゃダメ ログイン時はcreate_record=True
-        if self.user_id >= 1 and self.update_session_id_flag:
+        if self.user_id >= 1 and self.update_session_id_flag:#update_session_id_flagはデフォルト値true
             if cursor is not None:
                 if(create_record):
                     self.value_1 = random.randrange(start=0, stop=9223372036854775807, step=1)
@@ -210,17 +212,17 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
         if(self.user_id>=1):
             if(already_set_setting_dict==False):
                 self.set_user_setting_dict(cursor)
-            query="select username from user_data_table where user_id={};".format(self.user_id)
+            query="select username,guest_flag from user_data_table where user_id={};".format(self.user_id)
             cursor.execute(query)
             result=cursor.fetchone()
-            response_dict={**{"username":result[0]},**self.user_setting_dict,**self.user_id_dict}
+            response_dict={**{"username":result[0],"guest_flag":result[1]},**self.user_setting_dict,**self.user_basic_dict}
             query="select followed_users from user_relation_table where user_id={};".format(self.user_id)
             cursor.execute(query)
             result=cursor.fetchone()
             response_dict["followed_users_combined"]=result[0]
         return response_dict
     
-    def authentication_session(self, cursor) -> None:
+    def authentication_session(self, cursor,get_unread_notification_flag=True) -> None:
         if (self.value_1 is not None
             and self.value_2 is not None
         ):
@@ -232,23 +234,29 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
                 if matched_session is not None:
                     self.user_id = (matched_session[0] if (self.is_app and matched_session[1]=="y" and matched_session[2]==self.device_unique_id and self.self_declaration_user_id==matched_session[0])
                                     or (self.is_app==False and matched_session[1]=="n") else -1)
-                    self.user_id_dict["user_id"] = str(self.user_id)
+                    self.user_basic_dict["user_id"] = str(self.user_id)
+                    if(get_unread_notification_flag and self.user_id>=1):
+                        query="select exist_unread_notification_flag from user_notification_table where user_id={};".format(self.user_id)
+                        cursor.execute(query)
+                        result=cursor.fetchone()
+                        self.unread_notification_flag=True if result[0]=="y" else False
+                        self.user_basic_dict["unread_notification_flag"]=result[0]
                 else:
                     
                     self.user_id = -1
-                    self.user_id_dict["user_id"] = str(self.user_id)
+                    self.user_basic_dict["user_id"] = str(self.user_id)
             else:
                 self.user_id = -2
-                self.user_id_dict["user_id"] = str(self.user_id)
+                self.user_basic_dict["user_id"] = str(self.user_id)
         else:
             self.user_id = -3
-            self.user_id_dict["user_id"] = str(self.user_id)
+            self.user_basic_dict["user_id"] = str(self.user_id)
 
     def logout(self,cursor)->None:
         if(self.user_id>=1):
             query="DELETE FROM user_session_table WHERE session_id_1=%s AND session_id_2=%s;"
             data=(str(self.value_1),str(self.value_2),)
-            cursor.excute(query,data)
+            cursor.execute(query,data)
 
 
 def unauthorized_request(request: HttpRequest):
@@ -264,21 +272,21 @@ def tekitou(request:HttpRequest):
 
 
 def test(request:HttpRequest):
-    cnx1=my_functions.connect_to_database()
-    cnx2=my_functions.connect_to_database()
-    cursor1=cnx1.cursor()
-    cursor2=cnx2.cursor()
-    
-    query1="UPDATE x_table SET x=x+1 WHERE id = 1;"
-    cursor1.execute(query1)
-    cnx1.commit()
-    query2="UPDATE x_table SET x=x*2 WHERE id = 1;"
-    cursor2.execute(query2)
-    
-    
-    cnx2.commit()
-    my_functions.my_log("あいうえお")
-    return HttpResponse("assaa")
+    my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(100000)))
+    icon_new=my_functions.create_image_with_char(char="體",image_size=400)
+    icon_new.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(100000)))
+    cono = connection_to_user_db(request=request)
+    if(cono.session.is_moblie):
+        html_file="myapp/moblie_site/index.html"
+    else:
+        html_file="myapp/index.html"
+    return cono.set_response(
+        render(
+            request=request,
+            template_name=html_file,
+            context=cono.session.user_basic_dict,
+        )
+    )
 
 
 def index(request: HttpRequest):
@@ -291,7 +299,7 @@ def index(request: HttpRequest):
         render(
             request=request,
             template_name=html_file,
-            context=cono.session.user_id_dict,
+            context=cono.session.user_basic_dict,
         )
     )
 
@@ -303,7 +311,7 @@ def post(request: HttpRequest):
     else:
         html_file="myapp/post_page.html"
     return cono.set_response(
-        render(request=request, template_name=html_file, context=cono.session.user_id_dict)
+        render(request=request, template_name=html_file, context=cono.session.user_basic_dict)
     )
 
 
@@ -313,7 +321,7 @@ def signup(request: HttpRequest):
         html_file="myapp/moblie_site/signup_page.html"
     else:
         html_file="myapp/signup_page.html"
-    return render(request=request, template_name=html_file,context=cono.session.user_id_dict)
+    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
 def login_page(request: HttpRequest):
@@ -322,7 +330,7 @@ def login_page(request: HttpRequest):
         html_file="myapp/moblie_site/login_page.html"
     else:
         html_file="myapp/login_page.html"
-    return render(request=request, template_name=html_file,context=cono.session.user_id_dict)
+    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
 def my_page(request:HttpRequest):
@@ -334,7 +342,7 @@ def my_page(request:HttpRequest):
         user_data=cono.cursor.fetchone()
         if(user_data is not None):
             username=user_data[0]
-            mypage_dict_combined={**cono.session.user_id_dict,**{"username":username,"user_profile":user_data[1]}}
+            mypage_dict_combined={**cono.session.user_basic_dict,**{"username":username,"user_profile":user_data[1]}}
             if(cono.session.is_moblie):
                 html_file="myapp/moblie_site/my_page/my_page.html"
             else:
@@ -393,7 +401,7 @@ def posted_post(request:HttpRequest):
                 order="new_post",
                 user_id=cono.session.user_id
                 )
-            mypage_dict_combined={**posted_post_,**cono.session.user_id_dict,**{"username":username}}
+            mypage_dict_combined={**posted_post_,**cono.session.user_basic_dict,**{"username":username}}
             if(cono.session.is_moblie):
                 html_file="myapp/moblie_site/my_page/posted_content.html"
             else:
@@ -415,7 +423,7 @@ def change_password(request:HttpRequest):
         render(
             request=request,
             template_name=html_file,
-            context=cono.session.user_id_dict,
+            context=cono.session.user_basic_dict,
         )
     )
 
@@ -430,9 +438,50 @@ def change_password_success(request:HttpRequest):
         render(
             request=request,
             template_name=html_file,
-            context=cono.session.user_id_dict,
+            context=cono.session.user_basic_dict,
         )
     )
+
+
+def display_post_with_option(request: HttpRequest):
+    category_list=["latest_parent_comment","latest_child_comment",]
+    if("option_category" in request.GET and "subject_id" in request.GET):
+        print("aaa")
+        if request.GET["option_category"] in category_list and my_functions.check_str_is_int(request.GET["subject_id"]):
+            category=request.GET["option_category"]
+            subject_id=int(request.GET["subject_id"])
+        else:
+            return redirect_to_error_page
+    else:
+        return redirect_to_error_page
+    cono = connection_to_user_db(request=request,get_user_setting=True)
+    if category==category_list[0]:
+        content_id=int(subject_id)
+    elif category==category_list[1]:#category_list[0]なら特別なら特別な処理はいらない
+        query="select parent_content_id from discussion_data_table where comment_id=%s"
+        cono.cursor.execute(query,(str(subject_id),))
+        result=cono.cursor.fetchone()
+        content_id=result[0]
+        if(result is None):
+            return cono.return_error(requset=request)
+    max_display_number=10
+    displayed_post=my_functions.create_content_dict(
+        cursor=cono.cursor,
+        content_id_list=[content_id],
+        amount_of_displayed_post=max_display_number,
+        start_number=1,
+        page_number=1,
+        order="no_sort",
+        user_id=cono.session.user_id
+        )
+    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post,**{"option_category":category,"subject_id":subject_id}}
+    if(cono.session.is_moblie):
+        html_file="myapp/moblie_site/display_post.html"
+    else:
+        html_file="myapp/display_post.html"
+    response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
+
+    return response
 
 
 def display_post(request: HttpRequest, content_id: int):
@@ -449,7 +498,7 @@ def display_post(request: HttpRequest, content_id: int):
         order="no_sort",
         user_id=cono.session.user_id
         )
-    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post}
+    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post,**{"open_comment_id":"0"}}
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/display_post.html"
     else:
@@ -560,6 +609,21 @@ def user_page(request: HttpRequest,owner_user_id: int):
     return redirect_to_error_page
 
 
+def notification_page(request:HttpRequest):
+    cono=connection_to_user_db(request=request)
+    if(cono.session.user_id>=1):
+        notification_page_dict_combined={**cono.session.user_basic_dict,**{"notifications_json":mark_safe(json.dumps(my_functions.get_notification_data(cursor=cono.cursor,user_id=cono.session.user_id)))}}
+        cono.cnx.commit()
+        notification_page_dict_combined["unread_notification_flag"]="n"
+        if(cono.session.is_moblie):
+            html_file="myapp/moblie_site/notification_page.html"
+        else:
+            html_file="myapp/notification_page.html"
+        return cono.set_response(response=render(request=request,template_name=html_file,context=notification_page_dict_combined))
+    else:
+        return redirect_to_signup
+
+
 def change_user_info_page(request:HttpRequest):
     cono = connection_to_user_db(request=request)
     if(cono.session.user_id>=1):
@@ -569,7 +633,7 @@ def change_user_info_page(request:HttpRequest):
         user_data=cono.cursor.fetchone()
         if(user_data is not None):
             username=user_data[0]
-            mypage_dict_combined={**cono.session.user_id_dict,**{"username":username,"user_profile":user_data[1]}}
+            mypage_dict_combined={**cono.session.user_basic_dict,**{"username":username,"user_profile":user_data[1]}}
             if(cono.session.is_moblie):
                 html_file="myapp/moblie_site/change_user_info/change_user_info.html"
             else:
@@ -603,45 +667,74 @@ def delete_account_page(request:HttpRequest):
         render(
             request=request,
             template_name=html_file,
-            context=cono.session.user_id_dict,
+            context=cono.session.user_basic_dict,
         )
     )
-        
+
 #ここからページ遷移しないやつ
 
-def signup_process(request: HttpRequest):  # ユーザー登録
+def signup_common(request: HttpRequest,from_app_flag=False):  # ユーザー登録
     response_data={}
     try:
         request_data = json.loads(request.body)
+        if not my_functions.check_existence(multi=request_data,keys=["username","mailaddress","password"],allow_empty=True):
+            request_data = {}
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("1237083210983912")
+            return JsonResponse(response_data)
     except (ValueError, UnicodeDecodeError):
         request_data = {}
         response_data["result"]="request_broken_error"
+        my_functions.error_log("1237082")
         return JsonResponse(response_data)
     username = request_data["username"]
     mailaddress = request_data["mailaddress"]
     password = request_data["password"]
     cnx = my_functions.connect_to_database()
     cursor = cnx.cursor(buffered=True)
+    if "guest_flag" in request_data and from_app_flag:
+        guest_flag=request_data["guest_flag"]=="y"
+        if guest_flag:
+            with open(os.path.join(my_functions.etc_path,"sikutyouson.txt"), 'r', encoding='utf-8', errors='replace') as file:
+                sikutyou_list = file.read().split("\n")
+            username=""
+            mailaddress=""
+            password=""
+            incorrect_username_flag=True
+            while incorrect_username_flag:
+                sikutyou_index_1 = random.randrange(start=0, stop=len(sikutyou_list), step=1)
+                sikutyou_index_2 = random.randrange(start=0, stop=len(sikutyou_list), step=1)
+                username=sikutyou_list[sikutyou_index_1]+"_"+sikutyou_list[sikutyou_index_2]
+                incorrect_username_flag=my_functions.check_username_overlap(username=username,cursor=cursor)==False
+    else:
+        guest_flag=False
     if(not my_functions.check_username_overlap(username,cursor)):
+        cursor.close()
+        cnx.close()
         response_data["result"]="username_overlap"
         return JsonResponse(response_data)
-    elif(not my_functions.check_mailaddress_overlap(mailaddress,cursor)):
+    elif(not my_functions.check_mailaddress_overlap(mailaddress,cursor) and (not  guest_flag)):
+        cursor.close()
+        cnx.close()
         response_data["result"]="mailaddress_overlap"
         return JsonResponse(response_data)
     elif (
-        my_functions.check_password(password)#ここらはフロントエンドで確認するのでここで違ったらエラー扱い
-        and my_functions.check_mailaddress(mailaddress)
+        (my_functions.check_password(password) or guest_flag)#ここらはフロントエンドで確認するのでここで違ったらエラー扱い
+        and (my_functions.check_mailaddress(mailaddress) or guest_flag)
         and my_functions.check_username(username)
     ):
-        query = "SELECT * FROM user_data_table ORDER BY user_id DESC LIMIT 1"
+        query = "SELECT user_id FROM user_data_table ORDER BY user_id DESC LIMIT 1"
         cursor.execute(query)
         result = cursor.fetchone()
-        query = "INSERT INTO user_data_table (user_id,username,mailaddress,password) VALUES (%s,%s,%s,%s) ;"
         if result is not None:  # ユーザーがいる時
             user_id=int(result[0]) + 1
         else:#いない時
             user_id=1
-        data = (str(user_id),username,mailaddress,argon2.hash(password + secret_values.password_salt))
+        query = "INSERT INTO user_data_table (user_id,username,guest_flag) VALUES (%s,%s,%s) ;"
+        data = (str(user_id),username,"y" if guest_flag else "n")
+        cursor.execute(query, data)
+        query = "INSERT INTO user_secret_data_table (user_id,mailaddress,password) VALUES (%s,%s,%s);"
+        data=(str(user_id),mailaddress,"" if guest_flag else argon2.hash(password + password_salt))
         cursor.execute(query, data)
         query = "INSERT INTO user_view_history (user_id) VALUES({});".format(user_id)
         cursor.execute(query)
@@ -651,93 +744,125 @@ def signup_process(request: HttpRequest):  # ユーザー登録
         cursor.execute(query)
         query = "INSERT INTO user_relation_table (user_id) VALUES({});".format(user_id)
         cursor.execute(query)
-        new_session = session_data(request=request)
+        query = "INSERT INTO user_notification_table (user_id) VALUES({});".format(user_id)
+        cursor.execute(query)
+        new_session = session_data(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
         new_session.user_id=user_id
         new_session.update_values(cursor=cursor,create_record=True)
         cnx.commit()
-        my_search.add_user_to_index(user=[user_id,username,mailaddress])
-        cursor.close()
-        cnx.close()
-        my_functions.copy_file(origin_file_path=my_functions.media_path+"\\user_icons\\"+"defalt_icon.png",new_file_path=my_functions.media_path+"\\user_icons\\"+"user_icon_{}.png".format(user_id))
-        my_functions.copy_file(origin_file_path=my_functions.media_path+"\\user_icons\\"+"defalt_icon_mini.png",new_file_path=my_functions.media_path+"\\user_icons\\"+"user_icon_mini_{}.png".format(user_id))
+        my_search.add_user_to_index(user=[user_id,username])
+        my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
+        my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
+        icon_new=my_functions.create_image_with_char(char=username[0],image_size=400)
+        icon_new.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
+        icon_new=my_functions.create_image_with_char(char=username[0],image_size=200)
+        icon_new.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
         response_data["result"]="success"
+        response_data["user_id"]=str(user_id)
         response_data["session_id_1"]=str(new_session.value_1)
         response_data["session_id_2"]=str(new_session.value_2)
-        return JsonResponse(response_data)
     else:
         response_data["result"]="failed_error"
-        return JsonResponse(response_data)
-
-
-def login_process(request: HttpRequest):
-    response_data={}
-    try:
-        request_data = json.loads(request.body)
-    except (ValueError, UnicodeDecodeError):
-        request_data = {}
-        response_data["result"]="request_broken_error"
-        return JsonResponse(response_data)
-    if not my_functions.check_existence(request_data, ["mailaddress", "password"]):
-        response_data["result"]="failed_error"
-        return JsonResponse(response_data)
-    
-    if my_functions.check_password(request_data["password"]) and my_functions.check_mailaddress(request_data["mailaddress"]):
-        mailaddress = request_data["mailaddress"]
-        password = request_data["password"]
-        cnx = my_functions.connect_to_database()
-        cursor = cnx.cursor(buffered=True)
-        query = "SELECT user_id,password FROM user_data_table WHERE mailaddress = %s"
-        cursor.execute(query, ((mailaddress),))
-        mailaddress_matched_record = cursor.fetchone()
-        if mailaddress_matched_record is not None:
-            if argon2.verify(password + secret_values.password_salt, mailaddress_matched_record[1]):
-                new_session = session_data(request=request)
-                new_session.user_id=mailaddress_matched_record[0]#個別にやる
-                new_session.update_values(cursor=cursor,create_record=True)
-                cnx.commit()
-                cursor.close()
-                cnx.close()
-                response_data["result"]="success"
-                response_data["session_id_1"]=str(new_session.value_1)
-                response_data["session_id_2"]=str(new_session.value_2)
-            else:
-                response_data["result"]="incorrect_password"
-        else:
-            response_data["result"]="incorrect_mailaddress"
-    else:
-        response_data["result"]="failed_error"
+    cursor.close()
+    cnx.close()
     return JsonResponse(response_data)
+def signup_process(request: HttpRequest):
+    return signup_common(request=request,from_app_flag=False)
+@csrf_exempt
+def signup_process_app(request: HttpRequest):
+    return signup_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
-def login_process_app(request: HttpRequest):
+def true_signup(request:HttpRequest):
+    response_data={}
+    try:
+        request_data = json.loads(request.body)
+        if not my_functions.check_existence(multi=request_data,keys=["mailaddress","password"],allow_empty=False):
+            request_data = {}
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("12383210983912")
+            return JsonResponse(response_data)
+        else:
+            if(not my_functions.check_mailaddress(request_data["mailaddress"])) or (not my_functions.check_password(request_data["password"])):
+                request_data = {}
+                response_data["result"]="request_broken_error"
+                my_functions.error_log("12383210983912")
+                return JsonResponse(response_data)
+    except (ValueError, UnicodeDecodeError):
+        request_data = {}
+        my_functions.error_log("3849237847928")
+        response_data["result"]="request_broken_error"
+        return JsonResponse(response_data)
+    
+    mailaddress=request_data["mailaddress"]
+    password=request_data["password"]
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    if not my_functions.check_mailaddress_overlap(mailaddress=mailaddress,cursor=cono.cursor):
+        cono.terminate_connection()
+        response_data["result"]="mailaddress_overlap"
+        return JsonResponse(response_data)
+    
+    if(cono.session.user_id<=0):
+        cono.terminate_connection()
+        my_functions.error_log("384923227847928"+str(request_data))
+        response_data["result"]="incorrect_session"
+        return JsonResponse(response_data)
+
+    query="select guest_flag from user_data_table where user_id={};".format(cono.session.user_id)
+    cono.cursor.execute(query)
+    result=cono.cursor.fetchone()
+    if(result[0]!="y"):
+        cono.terminate_connection()
+        my_functions.error_log("3849237847928"+str(cono.session.user_id))
+        response_data["result"]="request_broken_error"
+        return JsonResponse(response_data)
+    
+    query = "UPDATE user_data_table SET guest_flag='n' WHERE user_id={};".format(cono.session.user_id)
+    cono.cursor.execute(query)
+    query = "UPDATE user_secret_data_table SET mailaddress=%s,password=%s WHERE user_id=%s;"
+    data = (mailaddress,argon2.hash(password + password_salt),str(cono.session.user_id))
+    cono.cursor.execute(query, data)
+    cono.cnx.commit()
+    cono.terminate_connection()
+    response_data["result"]="success"
+    return JsonResponse(response_data)
+
+
+def login_common(request: HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
         request_data = {}
         response_data["result"]="request_broken_error"
-        my_functions.error_log("088900890")
+        my_functions.error_log("08892300890",is_app=from_app_flag)
         return JsonResponse(response_data)
-    if not my_functions.check_existence(multi=request_data, keys=["mailaddress", "password","device_unique_id"]):
-        my_functions.error_log("797978979")
-        response_data["result"]="failed_error"
+    if not my_functions.check_existence(multi=request_data, keys=["mailaddress", "password","device_unique_id"] if from_app_flag else ["mailaddress", "password"]):
+        my_functions.error_log("797972238979",is_app=from_app_flag)
+        response_data["result"]="request_broken_error"
         return JsonResponse(response_data)
     
+    if from_app_flag:
+        correct_device_unique_id_flag=len(request_data["device_unique_id"])<=36
+    else:
+        correct_device_unique_id_flag=True
     
-    
-    if my_functions.check_password(request_data["password"]) and my_functions.check_mailaddress(request_data["mailaddress"]) and len(request_data["device_unique_id"])<=36:
+    if my_functions.check_password(request_data["password"]) and my_functions.check_mailaddress(request_data["mailaddress"]) and correct_device_unique_id_flag:
         mailaddress = request_data["mailaddress"]
         password = request_data["password"]
-        unique_id=request_data["device_unique_id"]
+        if from_app_flag:
+            unique_id=request_data["device_unique_id"]
+        else:
+            unique_id=""
         cnx = my_functions.connect_to_database()
         cursor = cnx.cursor(buffered=True)
-        query = "SELECT user_id,password FROM user_data_table WHERE mailaddress = %s"
+        query = "SELECT user_id,password FROM user_secret_data_table WHERE mailaddress = %s"
         cursor.execute(query, ((mailaddress),))
         mailaddress_matched_record = cursor.fetchone()
         if mailaddress_matched_record is not None:
-            if argon2.verify(password + secret_values.password_salt, mailaddress_matched_record[1]):
-                new_session = session_data(request=request,from_app_flag=True,uni_id=unique_id)
+            if argon2.verify(password + password_salt, mailaddress_matched_record[1]):
+                new_session = session_data(request=request,from_app_flag=from_app_flag,uni_id=unique_id)
                 new_session.user_id=mailaddress_matched_record[0]#個別にやる
                 new_session.update_values(cursor=cursor,create_record=True)
                 cnx.commit()
@@ -756,9 +881,14 @@ def login_process_app(request: HttpRequest):
     else:
         response_data["result"]="failed_error"
     return JsonResponse(response_data)
+def login_process(request: HttpRequest):
+    return login_common(request=request,from_app_flag=False)
+@csrf_exempt
+def login_process_app(request: HttpRequest):
+    return login_common(request=request,from_app_flag=True)
 
 
-def logout_process(request: HttpRequest):
+def logout_common(request: HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
@@ -766,27 +896,28 @@ def logout_process(request: HttpRequest):
         request_data = {}
         response_data["result"]="request_broken_error"
         return JsonResponse(response_data)
-    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=False)
-    cono.session.logout()
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
+    cono.session.logout(cursor=cono.cursor)
     return JsonResponse(response_data)
-
-
+def logout_process(request: HttpRequest):
+    return logout_common(request=request,from_app_flag=False)
+@csrf_exempt
+def logout_process_app(request: HttpRequest):
+    return logout_common(request=request,from_app_flag=True)
 
 def post_process(request: HttpRequest):
     response_data={}
-    print(request.__dict__)
-    print(request.FILES)
     if("json" in request.FILES):
         json_binary=request.FILES['json'].read()
         if(my_functions.is_valid_json(json_binary)):
             request_data = json.loads(json_binary.decode('utf-8'))
         else:
             response_data["result"]="request_broken_error"
-            my_functions.error_log("779876788")
+            my_functions.error_log("77923876788")
             return JsonResponse(response_data)
     else:
         response_data["result"]="request_broken_error"
-        my_functions.error_log("28193791")
+        my_functions.error_log("2833193791")
         return JsonResponse(response_data)
     
     response_data={}
@@ -800,7 +931,7 @@ def post_process(request: HttpRequest):
         if(request_data["image_count"].isdigit()):
             image_count=int(request_data["image_count"])
         else:
-            my_functions.error_log("217837179")
+            my_functions.error_log("21782237179")
             response_data["result"]="request_broken_error"
             return JsonResponse(response_data)
     else:
@@ -812,7 +943,7 @@ def post_process(request: HttpRequest):
        my_functions.check_content(text=overview,max_character_count=100,min_character_count=0,allow_new_line=False,max_new_line_count=2)==False or
        my_functions.check_tags(tags=tags)==False
        ):
-        my_functions.error_log("8786756567")
+        my_functions.error_log("878336756567")
         response_data["result"]="failed_error"
         return JsonResponse(response_data)
     
@@ -823,7 +954,7 @@ def post_process(request: HttpRequest):
     if(result is not None):
         cono.cursor.close()
         cono.cnx.close()
-        my_functions.error_log("3422342423")
+        my_functions.error_log("3422123342423")
         response_data["result"]="title_overlap"
         return JsonResponse(response_data)
     
@@ -843,7 +974,7 @@ def post_process(request: HttpRequest):
             content=""
             for i in range(image_count):
                 if(not "image_file_{}".format(i+1) in request.FILES):
-                    my_functions.error_log("687687688787")
+                    my_functions.error_log("68711687688787")
                     response_data["result"]="request_broken_error"
                     return JsonResponse(response_data)
                 
@@ -851,11 +982,11 @@ def post_process(request: HttpRequest):
                 if(my_functions.is_valid_image(image_binary=image_binary)):
                     image_list.append(Image.open(io.BytesIO(image_binary)))
                 else:
-                    my_functions.error_log("768686876868")
+                    my_functions.error_log("76118686876868")
                     response_data["result"]="failed_error"
                     return JsonResponse(response_data)
             
-            content_image_dir=my_functions.media_path+"\\content_image\\{}".format(content_id)
+            content_image_dir=my_functions.media_path+"/content_image/{}".format(content_id)
             if not os.path.exists(content_image_dir):
                 os.mkdir(content_image_dir)
             for i in range(image_count):
@@ -883,11 +1014,11 @@ def post_process(request: HttpRequest):
         else:
             index_content=content
         word_count = len(index_content)
-        sql = """
+        query = """
                INSERT INTO post_data_table 
-               (content_id,title,content,user_id,overview,word_count,tags,post_date)
+               (content_id,title,content,user_id,overview,word_count,tags,post_date,notification_user_ids)
                VALUES
-               (%s,%s,%s,%s,%s,%s,%s,%s) ;
+               (%s,%s,%s,%s,%s,%s,%s,%s,%s) ;
                """
         now = datetime.datetime.now(JST)
         data = (
@@ -898,30 +1029,31 @@ def post_process(request: HttpRequest):
                 overview,
                 str(word_count),
                 joined_tags,
-                now.strftime("%Y-%m-%d %H:%M:%S")
+                now.strftime("%Y-%m-%d %H:%M:%S"),
+                str(user_id)
             )
-        cono.cursor.execute(sql, data)
-        sql="""
+        cono.cursor.execute(query, data)
+        query="""
         INSERT INTO post_view_count_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
-        sql="""
+        cono.cursor.execute(query)
+        query="""
         INSERT INTO post_review_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
-        sql="""
+        cono.cursor.execute(query)
+        query="""
         INSERT INTO post_discussion_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
+        cono.cursor.execute(query)
         cono.cnx.commit()
         if(image_count>=1):
             index_content=""
@@ -936,38 +1068,25 @@ def post_process(request: HttpRequest):
         response_data["result"]="incorrect_session"
         my_functions.error_log("09218293")
     cono.terminate_connection()
-    return JsonResponse(response_data)
-
-    
+    return JsonResponse(response_data) 
 @csrf_exempt
 def post_process_app(request: HttpRequest):
     response_data={}
-    is_android=False
-    if("json" in request.FILES or False):
-        json_binary=request.FILES['json'].read()
-        if(my_functions.is_valid_json(json_binary)):
-            request_data = json.loads(json_binary.decode('utf-8'))
+    try:
+        request_data = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        request_data = {}
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("13453310")
+        return JsonResponse(response_data)
+    except Exception as e:
+        if e.__class__.__name__ == 'RequestDataTooBig':
+            response_data["result"]="too_big_data_error"
+            my_functions.error_log("23443242")
+            return JsonResponse(response_data)
         else:
-            response_data["result"]="request_broken_error"
-            my_functions.error_log("774356788")
-            return JsonResponse(response_data)
-    else:
-        try:
-            request_data = json.loads(request.body)
-            is_android=True
-        except (ValueError, UnicodeDecodeError):
-            request_data = {}
-            response_data["result"]="request_broken_error"
-            my_functions.error_log("13453310")
-            return JsonResponse(response_data)
-        except Exception as e:
-            if e.__class__.__name__ == 'RequestDataTooBig':
-                response_data["result"]="too_big_data_error"
-                my_functions.error_log("23443242")
-                return JsonResponse(response_data)
-            else:
-                # その他のエラーの処理
-                raise
+            # その他のエラーの処理
+            raise
     
     response_data={}
     if(my_functions.check_existence(multi=request_data,keys=["overview","joined_tags"],allow_empty=True) and
@@ -1023,37 +1142,22 @@ def post_process_app(request: HttpRequest):
             content_split=content.split(">")
             content=""
             for i in range(image_count):
-                if(is_android):
-                    if(not "image_blob_{}".format(i+1) in request_data):
-                        cono.terminate_connection()
-                        my_functions.error_log("121234279877")
-                        response_data["result"]="request_broken_error"
-                        return JsonResponse(response_data)
-                    else:
-                        image_binary= base64.b64decode(request_data["image_blob_{}".format(i+1)])
-
-                    if(my_functions.is_valid_image(image_binary=image_binary)):
-                        image_list.append(Image.open(io.BytesIO(image_binary)))
-                    else:
-                        cono.terminate_connection()
-                        my_functions.error_log("7823424817897")
-                        response_data["result"]="failed_error"
-                        return JsonResponse(response_data)
+                if(not "image_blob_{}".format(i+1) in request_data):
+                    cono.terminate_connection()
+                    my_functions.error_log("121234279877")
+                    response_data["result"]="request_broken_error"
+                    return JsonResponse(response_data)
                 else:
-                    if(not "image_file_{}".format(i+1) in request.FILES):
-                        my_functions.error_log("63424688787")
-                        response_data["result"]="request_broken_error"
-                        return JsonResponse(response_data)
-                    
-                    image_binary=request.FILES["image_file_{}".format(i+1)].read()
-                    if(my_functions.is_valid_image(image_binary=image_binary)):
-                        image_list.append(Image.open(io.BytesIO(image_binary)))
-                    else:
-                        my_functions.error_log("768683428")
-                        response_data["result"]="failed_error"
-                        return JsonResponse(response_data)
+                    image_binary= base64.b64decode(request_data["image_blob_{}".format(i+1)])
+                if(my_functions.is_valid_image(image_binary=image_binary)):
+                    image_list.append(Image.open(io.BytesIO(image_binary)))
+                else:
+                    cono.terminate_connection()
+                    my_functions.error_log("7823424817897")
+                    response_data["result"]="failed_error"
+                    return JsonResponse(response_data)
             
-            content_image_dir=my_functions.media_path+"\\content_image\\{}".format(content_id)
+            content_image_dir=my_functions.media_path+"/content_image/{}".format(content_id)
             if not os.path.exists(content_image_dir):
                 os.mkdir(content_image_dir)
             for i in range(image_count):
@@ -1082,11 +1186,11 @@ def post_process_app(request: HttpRequest):
         else:
             index_content=content
         word_count = len(index_content)
-        sql = """
+        query = """
                INSERT INTO post_data_table 
-               (content_id,title,content,user_id,overview,word_count,tags,post_date)
+               (content_id,title,content,user_id,overview,word_count,tags,post_date,notification_user_ids)
                VALUES
-               (%s,%s,%s,%s,%s,%s,%s,%s) ;
+               (%s,%s,%s,%s,%s,%s,%s,%s,%s) ;
                """
         now = datetime.datetime.now(JST)
         data = (
@@ -1097,30 +1201,31 @@ def post_process_app(request: HttpRequest):
                 overview,
                 str(word_count),
                 joined_tags,
-                now.strftime("%Y-%m-%d %H:%M:%S")
+                now.strftime("%Y-%m-%d %H:%M:%S"),
+                str(user_id)
             )
-        cono.cursor.execute(sql, data)
-        sql="""
+        cono.cursor.execute(query, data)
+        query="""
         INSERT INTO post_view_count_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
-        sql="""
+        cono.cursor.execute(query)
+        query="""
         INSERT INTO post_review_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
-        sql="""
+        cono.cursor.execute(query)
+        query="""
         INSERT INTO post_discussion_table
         (content_id)
         VALUES
         ({}) ;
         """.format(content_id)
-        cono.cursor.execute(sql)
+        cono.cursor.execute(query)
         cono.cnx.commit()
         
         my_search.add_post_to_index([content_id, title, index_content, user_id, overview, tags,now])#タグはリストで渡す、インデックスは視覚的に操作出来ないのでDBの操作が成功してから
@@ -1174,8 +1279,6 @@ def delete_post_process(request:HttpRequest):
         my_functions.error_log("32423424232")
     cono.terminate_connection()
     return JsonResponse(response_data)
-
-
 @csrf_exempt
 def delete_post_process_app(request:HttpRequest):
     response_data={}
@@ -1220,7 +1323,7 @@ def delete_post_process_app(request:HttpRequest):
     return JsonResponse(response_data)
 
 
-def view_count_doubleplus(request: HttpRequest):
+def view_count_doubleplus_common(request: HttpRequest,from_app_flag=False)->HttpResponse:
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
@@ -1229,9 +1332,12 @@ def view_count_doubleplus(request: HttpRequest):
        "session_id_2" in request_data and
        "content_id" in request_data):
         content_id_str=request_data["content_id"]
+        if(not my_functions.check_str_is_int(content_id_str)):
+            return HttpResponse("")
+        
         session_id_1_str=request_data["session_id_1"]
         session_id_2_str=request_data["session_id_2"]
-        cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=False)
+        cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
         query="SELECT content_id FROM post_data_table WHERE content_id=%s;"
         data=(content_id_str,)
         cono.cursor.execute(query,data)
@@ -1271,190 +1377,13 @@ def view_count_doubleplus(request: HttpRequest):
             cono.cnx.commit()
         cono.terminate_connection()
     return HttpResponse("")
-
-
+def view_count_doubleplus(request: HttpRequest):
+    return view_count_doubleplus_common(request=request,from_app_flag=False)
 @csrf_exempt
 def view_count_doubleplus_app(request: HttpRequest):
-    try:
-        request_data = json.loads(request.body)
-    except (ValueError, UnicodeDecodeError):
-        request_data = {}
-    if("session_id_1" in request_data and
-       "session_id_2" in request_data and
-       "content_id" in request_data):
-        content_id_str=request_data["content_id"]
-        cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
-        query="SELECT content_id FROM post_data_table WHERE content_id=%s;"
-        data=(content_id_str,)
-        cono.cursor.execute(query,data)
-        result02=cono.cursor.fetchone()
-        if(cono.session.user_id>=1 and result02 is not None):
-            user_id_str=str(cono.session.user_id)
-            query="SELECT * FROM user_view_history WHERE user_id={};".format(user_id_str)
-            cono.cursor.execute(query)
-            result=cono.cursor.fetchone()#[user_id,user_view_history_today,user_view_history_resent_100]
-            user_view_history_today = result[1].split(",")
-            user_view_history_resent_100 =result[2].split(",")
-            if(not content_id_str in user_view_history_today):
-                query="UPDATE post_view_count_table SET view_count=view_count+1,hour=hour+1,day=day+1,week=week+1,month_30=month_30+1 WHERE content_id = {};".format(content_id_str)#基本の閲覧数の追加
-                cono.cursor.execute(query)
-                
-                query="UPDATE user_view_history SET view_history_today='"#この後つなげる
-                if(result[1]==""):#result[1]は,でリストを結合した文字列でこの分岐は何もなかったとき
-                    query+="{}' WHERE user_id = {}".format(content_id_str,user_id_str)
-                else:
-                    query+="{}' WHERE user_id = {}".format(result[1]+","+content_id_str,user_id_str)
-                cono.cursor.execute(query)
-            
-            if(result[2]==""):#result[1]と同じく
-                query="UPDATE user_view_history SET view_history_resent_100='{}' WHERE user_id = {};".format(content_id_str,user_id_str)
-            else:
-                if(content_id_str in user_view_history_resent_100):
-                    user_view_history_resent_100.remove(content_id_str)
-                    user_view_history_resent_100.append(content_id_str)
-                    query="UPDATE user_view_history SET view_history_resent_100='{}'WHERE user_id = {};".format(",".join(user_view_history_resent_100),user_id_str)
-                else:
-                    if(len(user_view_history_resent_100)>=100):#閲覧履歴が埋まってたら先頭を削除 elseはない
-                        query="UPDATE user_view_history SET view_history_resent_100='{}' WHERE user_id = {}".format(
-                            result[2][len(user_view_history_resent_100[0])+1:]+","+content_id_str,user_id_str)#+1は,の分
-                    else:
-                        query="UPDATE user_view_history SET view_history_resent_100='{}' WHERE user_id = {}".format(result[2]+","+content_id_str,user_id_str)
-            cono.cursor.execute(query)
-            cono.cnx.commit()
-        cono.terminate_connection()
-    return HttpResponse("")
+    return view_count_doubleplus_common(request=request,from_app_flag=True)
 
-
-def review_post(request:HttpRequest):
-    try:
-        request_data = json.loads(request.body)
-    except (ValueError, UnicodeDecodeError):
-        request_data = {}
-    response_data={}
-    if("session_id_1" in request_data and
-       "session_id_2" in request_data and
-       "content_id" in request_data and
-       "change" in request_data):
-        content_id_str=request_data["content_id"]
-        cono=connection_to_user_db(request_json_data=request_data)
-        change=request_data["change"]
-        query="SELECT content_id FROM post_data_table WHERE content_id=%s;"
-        data=(content_id_str,)
-        cono.cursor.execute(query,data)
-        result02=cono.cursor.fetchone()
-        if(cono.session.user_id>=1 and result02 is not None):
-            post_review=""#対象のpostへの対象のユーザーの評価
-            query="select like_history,dislike_history from user_review_history where user_id={}".format(cono.session.user_id)
-            cono.cursor.execute(query)
-            result=cono.cursor.fetchone()
-            liked_list = result[0].split(",")#全て文字列
-            disliked_list = result[1].split(",")
-            
-            if("" in liked_list):
-                liked_list.remove("")#これで空のcontent_idが入らないようにする
-            if("" in disliked_list):
-                disliked_list.remove("")
-            
-            if(content_id_str in liked_list):
-                post_review="liked"
-            elif(content_id_str in disliked_list):#liked xor disliked
-                post_review="disliked"
-            
-            if(change=="add_like"):
-                response_data["dislike"]="none"#場合によっては変わる
-                if(post_review=="liked"):#likeを消す
-                    liked_list.remove(content_id_str)
-                    new_liked_list_joind=",".join(liked_list)
-                    query="UPDATE user_review_history SET like_history='{}' WHERE user_id = {};".format(new_liked_list_joind,cono.session.user_id)
-                    cono.cursor.execute(query)
-                    query="""UPDATE post_review_table SET like_count=like_count-1,
-                    like_count_hour=like_count_hour-1,
-                    like_count_day=like_count_day-1,
-                    like_count_week=like_count_week-1,
-                    like_count_month_30=like_count_month_30-1 WHERE content_id = {};""".format(content_id_str)
-                    cono.cursor.execute(query)
-                    response_data["like"]="removed"
-                else:#likeを足す
-                    if(post_review=="disliked"):#dislikeを消す
-                        disliked_list.remove(content_id_str)
-                        new_disliked_list_joind=",".join(disliked_list)
-                        query="UPDATE user_review_history SET dislike_history='{}' WHERE user_id = {};".format(new_disliked_list_joind,cono.session.user_id)
-                        cono.cursor.execute(query)
-                        query="""UPDATE post_review_table SET dislike_count=dislike_count-1,
-                        dislike_count_hour=dislike_count_hour-1,
-                        dislike_count_day=dislike_count_day-1,
-                        dislike_count_week=dislike_count_week-1,
-                        dislike_count_month_30=dislike_count_month_30-1 WHERE content_id = {};""".format(content_id_str)
-                        cono.cursor.execute(query)
-                        response_data["dislike"]="removed"
-                    liked_list.append(content_id_str)
-                    new_liked_list_joind=",".join(liked_list)
-                    query="UPDATE user_review_history SET like_history='{}' WHERE user_id = {};".format(new_liked_list_joind,cono.session.user_id)
-                    cono.cursor.execute(query)
-                    query="""UPDATE post_review_table SET like_count=like_count+1,
-                    like_count_hour=like_count_hour+1,
-                    like_count_day=like_count_day+1,
-                    like_count_week=like_count_week+1,
-                    like_count_month_30=like_count_month_30+1 WHERE content_id = {};""".format(content_id_str)
-                    cono.cursor.execute(query)
-                    response_data["like"]="added"
-            elif(change=="add_dislike"):#add_likeの反対
-                response_data["like"]="none"#場合によっては変わる
-                if(post_review=="disliked"):#すでにdislikeされているならdislikeを取り消す
-                    disliked_list.remove(content_id_str)
-                    new_disliked_list_joind=",".join(disliked_list)
-                    query="UPDATE user_review_history SET dislike_history='{}' WHERE user_id = {};".format(new_disliked_list_joind,cono.session.user_id)
-                    cono.cursor.execute(query)
-                    query="""UPDATE post_review_table SET dislike_count=dislike_count-1,
-                    dislike_count_hour=dislike_count_hour-1,
-                    dislike_count_day=dislike_count_day-1,
-                    dislike_count_week=dislike_count_week-1,
-                    dislike_count_month_30=dislike_count_month_30-1 WHERE content_id = {};""".format(content_id_str)
-                    cono.cursor.execute(query)
-                    response_data["dislike"]="removed"
-                else:
-                    if(post_review=="liked"):#likeを取り消す
-                        liked_list.remove(content_id_str)
-                        new_liked_list_joind=",".join(liked_list)
-                        query="UPDATE user_review_history SET like_history='{}' WHERE user_id = {};".format(new_liked_list_joind,cono.session.user_id)
-                        cono.cursor.execute(query)
-                        query="""UPDATE post_review_table SET like_count=like_count-1,
-                        like_count_hour=like_count_hour-1,
-                        like_count_day=like_count_day-1,
-                        like_count_week=like_count_week-1,
-                        like_count_month_30=like_count_month_30-1 WHERE content_id = {};""".format(content_id_str)
-                        cono.cursor.execute(query)
-                        response_data["like"]="removed"
-                    disliked_list.append(content_id_str)
-                    new_disliked_list_joind=",".join(disliked_list)
-                    query="UPDATE user_review_history SET dislike_history='{}' WHERE user_id = {};".format(new_disliked_list_joind,cono.session.user_id)
-                    cono.cursor.execute(query)
-                    query="""UPDATE post_review_table SET dislike_count=dislike_count+1,
-                    dislike_count_hour=dislike_count_hour+1,
-                    dislike_count_day=dislike_count_day+1,
-                    dislike_count_week=dislike_count_week+1,
-                    dislike_count_month_30=dislike_count_month_30+1 WHERE content_id = {};""".format(content_id_str)
-                    cono.cursor.execute(query)
-                    response_data["dislike"]="added"
-            query="select like_count,dislike_count from post_review_table where content_id=%s;"
-            cono.cursor.execute(query,(content_id_str,))
-            result=cono.cursor.fetchone()
-            query="UPDATE post_review_table SET like_dislike_ratio=%s where content_id=%s;"
-            cono.cursor.execute(query,((result[0] if result[0]!=0 else 1)/(result[1] if result[1]!=0 else 1),content_id_str))
-            
-            response_data["result"]="success"
-        else:
-            response_data["result"]="failed_error"
-        cono.cnx.commit()
-        cono.terminate_connection()
-    else:
-        response_data["result"]="failed_error"
-    
-    return JsonResponse(response_data)
-
-
-@csrf_exempt
-def review_post_app(request:HttpRequest):
+def review_post_common(request:HttpRequest,from_app_flag=False):
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
@@ -1463,7 +1392,11 @@ def review_post_app(request:HttpRequest):
     if("content_id" in request_data and
        "change" in request_data):
         content_id_str=request_data["content_id"]
-        cono=connection_to_user_db(request_json_data=request_data,from_app_flag=True)
+        if(not my_functions.check_str_is_int(content_id_str)):
+            my_functions.error_log("1368612868"+content_id_str+str(from_app_flag))
+            response_data["result"]="failed_error"
+            return JsonResponse(response_data)
+        cono=connection_to_user_db(request_json_data=request_data,from_app_flag=from_app_flag)
         change=request_data["change"]
         query="SELECT content_id FROM post_data_table WHERE content_id=%s;"
         data=(content_id_str,)
@@ -1575,8 +1508,12 @@ def review_post_app(request:HttpRequest):
         cono.terminate_connection()
     else:
         response_data["result"]="failed_error"
-    print(response_data)
     return JsonResponse(response_data)
+def review_post(request:HttpRequest):
+    return review_post_common(request=request,from_app_flag=False)
+@csrf_exempt
+def review_post_app(request:HttpRequest):
+    return review_post_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
@@ -1589,10 +1526,10 @@ def get_my_post(request:HttpRequest):
     cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
     if(cono.session.user_id>=1):
         user_id=cono.session.user_id
-        query="select * from user_data_table where user_id={}".format(user_id)
+        query="select username from user_data_table where user_id={}".format(user_id)
         cono.cursor.execute(query)
         user_data=cono.cursor.fetchone()
-        username=user_data[1]
+        username=user_data[0]
         user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_conditions=["user_id"])))#何故か重複するので重複排除
         posted_post_=my_functions.create_content_dict(
             cursor=cono.cursor,
@@ -1627,6 +1564,8 @@ def search_process_app(request: HttpRequest):
     max_display_number=10
     if(my_functions.check_existence(multi=request_data,keys=["post_order"],allow_empty=False)):
         order=request_data["post_order"]#不正な文字列の判定はcreate_content_dictでやる
+        if(order=="osusume"):
+            order="like_count_many"
     else:
         my_functions.error_log("293287897")
         order="new_post"
@@ -1705,6 +1644,44 @@ def search_process_app(request: HttpRequest):
 
 
 @csrf_exempt
+def get_uni_post_data(request: HttpRequest):
+    response_data={}
+    try:
+        request_data = json.loads(request.body)
+        if("content_id" in request_data):
+            if my_functions.check_str_is_int(request_data["content_id"]):
+                content_id=int(request_data["content_id"])
+            else:
+                response_data["result"]="request_broken_error"
+                my_functions.error_log("334224426")
+                return JsonResponse(response_data)
+        else:
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("273947947")
+            return JsonResponse(response_data)
+    except (ValueError, UnicodeDecodeError):
+        request_data = {}
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("374263486")
+        return JsonResponse(response_data)
+    cono = connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    max_display_number=10
+    displayed_post=my_functions.create_content_dict(
+        cursor=cono.cursor,
+        content_id_list=[content_id],
+        amount_of_displayed_post=max_display_number,
+        start_number=1,
+        page_number=1,
+        order="no_sort",
+        user_id=cono.session.user_id
+        )
+    response_data["result"]="success"
+    response_data={**response_data,**displayed_post}
+    cono.terminate_connection()
+    return JsonResponse(response_data)
+
+
+@csrf_exempt
 def get_discussion_data(request:HttpRequest):#アプリでも使える
     try:
         request_data = json.loads(request.body)
@@ -1767,7 +1744,7 @@ def get_discussion_data(request:HttpRequest):#アプリでも使える
     return JsonResponse(response_data)
 
 
-def add_comment(request:HttpRequest):
+def add_comment_common(request:HttpRequest,from_app_flag):
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
@@ -1781,13 +1758,12 @@ def add_comment(request:HttpRequest):
         content_id_str=request_data["content_id"]
         comment_content=request_data["comment_content"]
         parent_comment_id_str=request_data["parent_comment_id"]
-        cono=connection_to_user_db(request=request,request_json_data=request_data,get_user_setting=True,from_app_flag=False)
+        cono=connection_to_user_db(request=request,request_json_data=request_data,get_user_setting=True,from_app_flag=from_app_flag)
         query="SELECT content_id,comment_ids FROM post_discussion_table WHERE content_id=%s;"
         data=(content_id_str,)
         cono.cursor.execute(query,data)
         result02=cono.cursor.fetchone()
-        if(cono.session.user_id>=1 and result02 is not None and
-           my_functions.check_content(text=comment_content,max_character_count=1000)):
+        if(cono.session.user_id>=1 and result02 is not None and my_functions.check_content(text=comment_content,max_character_count=1000,min_character_count=1)):
             result02=list(result02)
             user_id_str=str(cono.session.user_id)
             content_id_str=str(result02[0])
@@ -1796,124 +1772,117 @@ def add_comment(request:HttpRequest):
             else:
                 result02[1]+=",0"
             posted_comment_list=result02[1].split(",")
-            if(parent_comment_id_str in  posted_comment_list):
-                query="SELECT comment_id FROM discussion_data_table ORDER BY comment_id DESC LIMIT 1 ;"
-                cono.cursor.execute(query)
-                result = cono.cursor.fetchone()
-                if(result is not None):
-                    comment_id=result[0]+1
+            query="select user_id from post_data_table where content_id=%s;"
+            cono.cursor.execute(query,(content_id_str,))
+            result=cono.cursor.fetchone()
+            if(result is not None):
+                parent_content_user_id=result[0]
+                parent_comment_not_deleted_flag=False
+                if(parent_comment_id_str=="0"):
+                    parent_comment_not_deleted_flag=True
                 else:
-                    comment_id=1
-                query="""
-                INSERT INTO discussion_data_table (comment_id,content,parent_content_id,parent_comment_id,user_id,post_date)
-                VALUES
-                (%s,%s,%s,%s,%s,%s) ;"""
-                now = datetime.datetime.now(JST)
-                data=[str(comment_id),comment_content,content_id_str,parent_comment_id_str,user_id_str,now.strftime("%Y-%m-%d %H:%M:%S")]
-                cono.cursor.execute(query,data)
-                query="SELECT comment_ids FROM post_discussion_table WHERE content_id = {};".format(content_id_str)
-                cono.cursor.execute(query)
-                result=cono.cursor.fetchone()
-                if(result[0]==""):
-                    new_comment_ids=str(comment_id)
+                    query="SELECT user_id FROM discussion_data_table where comment_id=%s;"
+                    cono.cursor.execute(query,(parent_comment_id_str,))
+                    result = cono.cursor.fetchone()
+                    if(result is not None):
+                        parent_comment_not_deleted_flag=True
+                        parent_comment_user_id=result[0]
+                    
+                if parent_comment_not_deleted_flag:
+                    query="SELECT comment_id FROM discussion_data_table ORDER BY comment_id DESC LIMIT 1 ;"
+                    cono.cursor.execute(query)
+                    result = cono.cursor.fetchone()
+                    if(result is not None):
+                        comment_id=result[0]+1
+                    else:
+                        comment_id=1
+                    query="""
+                    INSERT INTO discussion_data_table (comment_id,content,parent_content_id,parent_comment_id,user_id,post_date)
+                    VALUES
+                    (%s,%s,%s,%s,%s,%s) ;"""
+                    now = datetime.datetime.now(JST)
+                    data=[str(comment_id),comment_content,content_id_str,parent_comment_id_str,user_id_str,now.strftime("%Y-%m-%d %H:%M:%S")]
+                    cono.cursor.execute(query,data)
+                    query="SELECT comment_ids FROM post_discussion_table WHERE content_id = {};".format(content_id_str)
+                    cono.cursor.execute(query)
+                    result=cono.cursor.fetchone()
+                    if(result[0]==""):
+                        new_comment_ids=str(comment_id)
+                    else:
+                        new_comment_ids=result[0]+","+str(comment_id)
+                    query="UPDATE post_discussion_table SET comment_ids=%s WHERE content_id = %s;"
+                    data=[new_comment_ids,content_id_str]
+                    cono.cursor.execute(query,data)
+                    response_data["result"]="success"
+                    response_data["comment_id"]=str(comment_id)
+                    response_data["comment_content"]=comment_content
+                    query="select username from user_data_table where user_id={};".format(cono.session.user_id)
+                    cono.cursor.execute(query)
+                    result=cono.cursor.fetchone()
+                    response_data["comment_username"]=result[0]
+                    cono.cnx.commit()
+                    if(parent_comment_id_str=="0"):
+                        my_functions.add_notification_data(subject_category="new_comment",subject_id=int(content_id_str),cursor=cono.cursor,user_id=parent_content_user_id)
+                    else:
+                        my_functions.add_notification_data(subject_category="new_child_comment",subject_id=int(parent_comment_id_str),cursor=cono.cursor,user_id=parent_comment_user_id)
+                    cono.cnx.commit()
                 else:
-                    new_comment_ids=result[0]+","+str(comment_id)
-                query="UPDATE post_discussion_table SET comment_ids=%s WHERE content_id = %s;"
-                data=[new_comment_ids,content_id_str]
-                cono.cursor.execute(query,data)
-                response_data["result"]="success"
-                response_data["comment_id"]=str(comment_id)
-                response_data["comment_content"]=comment_content
-                query="select username from user_data_table where user_id={};".format(cono.session.user_id)
-                cono.cursor.execute(query)
-                result=cono.cursor.fetchone()
-                response_data["comment_username"]=result[0]
+                    response_data["result"]="parent_comment_deleted"
             else:
-                response_data["result"]="parent_comment_deleted"
+                response_data["result"]="parent_content_deleted"
         else:
             response_data["result"]="failed_error"
-        cono.cnx.commit()
         cono.terminate_connection()
     else:
         response_data["result"]="failed_error"
     return JsonResponse(response_data)
-
-
+def add_comment(request:HttpRequest):
+    return add_comment_common(request=request,from_app_flag=False)
 @csrf_exempt
 def add_comment_app(request:HttpRequest):
+    return add_comment_common(request=request,from_app_flag=True)
+
+
+def delete_comment_process(request:HttpRequest):
+    response_data={}
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
-        request_data = {}
-    response_data={}
-    if("session_id_1" in request_data and
-       "session_id_2" in request_data and
-       "content_id" in request_data and
-       "comment_content" in request_data and
-       "parent_comment_id" in request_data):
-        content_id_str=request_data["content_id"]
-        comment_content=request_data["comment_content"]
-        parent_comment_id_str=request_data["parent_comment_id"]
-        cono=connection_to_user_db(request=request,request_json_data=request_data,get_user_setting=True,from_app_flag=True)
-        query="SELECT content_id,comment_ids FROM post_discussion_table WHERE content_id=%s;"
-        data=(content_id_str,)
-        cono.cursor.execute(query,data)
-        result02=cono.cursor.fetchone()
-        if(cono.session.user_id<=0 ):
-            response_data["result"]="incorrect_session_error"
-            cono.terminate_connection()
-            return JsonResponse(response_data)
-            
-        if(result02 is not None and
-           my_functions.check_content(text=comment_content,max_character_count=1000)):
-            result02=list(result02)
-            user_id_str=str(cono.session.user_id)
-            content_id_str=str(result02[0])
-            if(result02[1]==""):
-                result02[1]="0"
-            else:
-                result02[1]+=",0"
-            posted_comment_list=result02[1].split(",")
-            if(parent_comment_id_str in  posted_comment_list):
-                query="SELECT comment_id FROM discussion_data_table ORDER BY comment_id DESC LIMIT 1 ;"
-                cono.cursor.execute(query)
-                result = cono.cursor.fetchone()
-                if(result is not None):
-                    comment_id=result[0]+1
-                else:
-                    comment_id=1
-                query="""
-                INSERT INTO discussion_data_table (comment_id,content,parent_content_id,parent_comment_id,user_id,post_date)
-                VALUES
-                (%s,%s,%s,%s,%s,%s) ;"""
-                now = datetime.datetime.now(JST)
-                data=[str(comment_id),comment_content,content_id_str,parent_comment_id_str,user_id_str,now.strftime("%Y-%m-%d %H:%M:%S")]
-                cono.cursor.execute(query,data)
-                query="SELECT comment_ids FROM post_discussion_table WHERE content_id = {};".format(content_id_str)
-                cono.cursor.execute(query)
-                result=cono.cursor.fetchone()
-                if(result[0]==""):
-                    new_comment_ids=str(comment_id)
-                else:
-                    new_comment_ids=result[0]+","+str(comment_id)
-                query="UPDATE post_discussion_table SET comment_ids=%s WHERE content_id = %s;"
-                data=[new_comment_ids,content_id_str]
-                cono.cursor.execute(query,data)
-                response_data["result"]="success"
-                response_data["comment_id"]=str(comment_id)
-                response_data["comment_content"]=comment_content
-                query="select username from user_data_table where user_id={};".format(cono.session.user_id)
-                cono.cursor.execute(query)
-                result=cono.cursor.fetchone()
-                response_data["comment_username"]=result[0]
-            else:
-                response_data["result"]="parent_comment_deleted"
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("281234234291")
+        return JsonResponse(response_data)
+    if(my_functions.check_existence(multi=request_data,keys=["session_id_1","session_id_2","content_id"],allow_empty=False)):
+        if(my_functions.check_str_is_int(request_data["content_id"])):
+            content_id=int(request_data["content_id"])
         else:
-            response_data["result"]="failed_error"
-        cono.cnx.commit()
-        cono.terminate_connection()
+            response_data["result"]="request_broken_error"
+            return JsonResponse(response_data)
     else:
-        response_data["result"]="failed_error"
+        my_functions.error_log("723498342422")
+        response_data["result"]="request_broken_error"
+        return JsonResponse(response_data)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=False)
+    query="SELECT user_id FROM post_data_table WHERE content_id=%s;"
+    cono.cursor.execute(query,(str(content_id),))
+    result = cono.cursor.fetchone()
+    if(result is None):
+        cono.terminate_connection()
+        my_functions.error_log("25873924235")
+        response_data["result"]="none_content_error"
+        return JsonResponse(response_data)
+    
+    if(cono.session.user_id==result[1]):
+        query="INSERT INTO deleted_post_data_table SELECT * FROM post_data_table where content_id={};".format(content_id)
+        cono.cursor.execute(query)
+        query="UPDATE post_data_table SET title='削除された投稿',content='削除された投稿',overview='削除された投稿',tags='' where content_id={}".format(content_id)
+        cono.cursor.execute(query)
+        cono.cnx.commit()
+        my_search.delete_post_from_index(content_id=content_id)#インデックスは視覚的に操作出来ないのでDBの操作が成功してから
+        response_data["result"]="success"
+    else:
+        response_data["result"]="incrrect_session_error"
+        my_functions.error_log("32423424232")
+    cono.terminate_connection()
     return JsonResponse(response_data)
 
 
@@ -1959,12 +1928,12 @@ def change_user_info_process(request:HttpRequest):
             
             image_binary=request.FILES['image_file'].read()
             if(my_functions.is_valid_image(image_binary)):
-                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"\\user_icons","user_icon_{}.png".format(user_id)))
+                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
                 uploaded_image =my_functions.image_resize_and_crop_square(image=Image.open(io.BytesIO(image_binary)),size=400)
-                uploaded_image.save(os.path.join(my_functions.media_path+"\\user_icons","user_icon_{}.png".format(user_id)))
-                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"\\user_icons","user_icon_mini_{}.png".format(user_id)))
+                uploaded_image.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
+                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
                 uploaded_image =my_functions.image_resize_and_crop_square(image=Image.open(io.BytesIO(image_binary)),size=200)
-                uploaded_image.save(os.path.join(my_functions.media_path+"\\user_icons","user_icon_mini_{}.png".format(user_id)))
+                uploaded_image.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
             else:
                 cono.terminate_connection()
                 my_functions.error_log("127317928")
@@ -2025,12 +1994,12 @@ def change_user_info_process_app(request:HttpRequest):
             
             image_binary=base64.b64decode(request_data["image_base64"])
             if(my_functions.is_valid_image(image_binary)):
-                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"\\user_icons","user_icon_{}.png".format(user_id)))
+                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
                 uploaded_image =my_functions.image_resize_and_crop_square(image=Image.open(io.BytesIO(image_binary)),size=400)
-                uploaded_image.save(os.path.join(my_functions.media_path+"\\user_icons","user_icon_{}.png".format(user_id)))
-                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"\\user_icons","user_icon_mini_{}.png".format(user_id)))
+                uploaded_image.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_{}.png".format(user_id)))
+                my_functions.delete_file_if_exists(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
                 uploaded_image =my_functions.image_resize_and_crop_square(image=Image.open(io.BytesIO(image_binary)),size=200)
-                uploaded_image.save(os.path.join(my_functions.media_path+"\\user_icons","user_icon_mini_{}.png".format(user_id)))
+                uploaded_image.save(os.path.join(my_functions.media_path+"/user_icons","user_icon_mini_{}.png".format(user_id)))
             else:
                 cono.terminate_connection()
                 my_functions.error_log("3123")
@@ -2056,53 +2025,58 @@ def change_user_info_process_app(request:HttpRequest):
         return JsonResponse(response_data)
 
 
-def change_password_process(request:HttpRequest):
+def change_password_common(request:HttpRequest,from_app_flag=False):
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
         request_data = {}
         response_data={"result":"failed_error"}
+        my_functions.error_log("12032313812392"+str(from_app_flag))
         return JsonResponse(response_data)
-    if("user_id" in request_data and
-       "session_id_1" in request_data and
-       "session_id_2" in request_data and
-       "password_old" in request_data and
-       "password_new" in request_data
-       ):
-        password_old=request_data["password_old"]
-        password_new=request_data["password_new"]
-        session_id_1_str=request_data["session_id_1"]
-        session_id_2_str=request_data["session_id_2"]
-        cnx=my_functions.connect_to_database()
-        cursor=cnx.cursor(buffered=True)
-        query="SELECT user_id FROM user_session_table WHERE session_id_1=%s AND session_id_2=%s and is_app='n'"
-        data=(session_id_1_str,session_id_2_str)
-        cursor.execute(query,data)
-        result = cursor.fetchone()
-        if(result[0]==int(request_data["user_id"]) and my_functions.check_password(password_new)):
-            user_id=result[0]
-            query="SELECT password FROM user_data_table WHERE user_id={};".format(user_id)
-            cursor.execute(query)
-            result = cursor.fetchone()
-            if(argon2.verify(password_old + secret_values.password_salt, result[0])):
-                password_new=argon2.hash(password_new + secret_values.password_salt)
-                query="UPDATE user_data_table SET password=%s WHERE user_id = %s;"
-                data=(password_new,user_id)
-                cursor.execute(query,data)
-                query="DELETE FROM user_session_table WHERE user_id = %s"
-                data=(user_id,)
-                cursor.execute(query,data)
-                cnx.commit()
-                cursor.close()
-                cnx.close()
-                response_data={"result":"success"}
-            else:
-                response_data={"result":"failed_password"}
-        else:
-            response_data={"result":"failed_error"}
-    else:
+    if not my_functions.check_existence(multi=request_data,keys=["password_old","password_new"]):
+        request_data = {}
+        my_functions.error_log("1203812392"+str(from_app_flag))
         response_data={"result":"failed_error"}
+        return JsonResponse(response_data)
+    
+    password_old=request_data["password_old"]
+    password_new=request_data["password_new"]
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
+    user_id=cono.session.user_id
+    if user_id<=0:
+        cono.terminate_connection()
+        my_functions.error_log("1202470380998"+str(from_app_flag))
+        response_data={"result":"incorrect_session"}
+        return JsonResponse(response_data)
+        
+    if not my_functions.check_password(password_new):
+        cono.terminate_connection()
+        my_functions.error_log("120247098"+str(from_app_flag))
+        response_data={"result":"error_password"}
+        return JsonResponse(response_data)
+
+    query="SELECT password FROM user_secret_data_table WHERE user_id={};".format(user_id)
+    cono.cursor.execute(query)
+    result = cono.cursor.fetchone()
+    if(argon2.verify(password_old + password_salt, result[0])):
+        password_new=argon2.hash(password_new + password_salt)
+        query="UPDATE user_secret_data_table SET password=%s WHERE user_id = %s;"
+        data=(password_new,user_id)
+        cono.cursor.execute(query,data)
+        query="DELETE FROM user_session_table WHERE user_id = %s and is_app='n';"
+        data=(user_id,)
+        cono.cursor.execute(query,data)
+        cono.cnx.commit()
+        response_data={"result":"success"}
+    else:
+        response_data={"result":"failed_password"}
+    cono.terminate_connection()
     return JsonResponse(response_data)
+def change_password_process(request:HttpRequest):
+    return change_password_common(request=request,from_app_flag=False)
+@csrf_exempt
+def change_password_process_app(request:HttpRequest):
+    return change_password_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
@@ -2154,11 +2128,12 @@ def get_user_data_process(request:HttpRequest):
         return JsonResponse(response_data)
 
     else:
-        query="select username,user_profile from user_data_table where user_id={};".format(user_id)
+        query="select username,user_profile,guest_flag from user_data_table where user_id={};".format(user_id)
         cursor.execute(query)
         result=cursor.fetchone()
         response_data["username"]=result[0]
         response_data["user_profile"]=result[1]
+        response_data["guest_flag"]=result[2]
         
         if(get_f_f_flag):
             query="select followers,followed_users from user_relation_table where user_id={};".format(user_id)
@@ -2301,8 +2276,6 @@ def user_follow(request:HttpRequest):
         my_functions.error_log("039024898398298")
     cono.terminate_connection()
     return JsonResponse(response_data)
-
-
 @csrf_exempt
 def user_follow_app(request:HttpRequest):
     response_data={}
@@ -2310,7 +2283,7 @@ def user_follow_app(request:HttpRequest):
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
         response_data["result"]="request_broken_error"
-        my_functions.error_log("234223789798")
+        my_functions.error_log("234223213789798")
         return JsonResponse(response_data)
     if(my_functions.check_existence(multi=request_data,keys=["followed_user_id"],allow_empty=False)):
         if(my_functions.check_str_is_int(request_data["followed_user_id"])):
@@ -2434,10 +2407,31 @@ def get_view_history_app(request: HttpRequest):
         response_data["result"]="success"
         response_data={**response_data,**view_history_content_dict}
     else:
-        response_data["result"]="incorrect_session_error"
+        response_data["result"]="incorrect_session"
     cono.terminate_connection()
     return JsonResponse(response_data)
 
+
+@csrf_exempt
+def get_notification_data_app(request:HttpRequest):
+    response_data={}
+    try:
+        request_data = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("2342289798")
+        return JsonResponse(response_data)
+    
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    if(cono.session.user_id>=1):
+        response_data={**cono.session.user_basic_dict,**{"notifications_json":mark_safe(json.dumps(my_functions.get_notification_data(cursor=cono.cursor,user_id=cono.session.user_id)))}}
+        cono.cnx.commit()
+        response_data["unread_notification_flag"]="n"
+        response_data["result"]="success"
+    else:
+        response_data["result"]="incorrect_session"
+    cono.terminate_connection()
+    return JsonResponse(response_data)
 
 
 def report_process(request:HttpRequest):
@@ -2483,8 +2477,6 @@ def report_process(request:HttpRequest):
     cono.terminate_connection()
     response_data={"result":"success"}
     return JsonResponse(response_data)
-
-
 @csrf_exempt
 def report_process_app(request:HttpRequest):
     try:
@@ -2531,7 +2523,7 @@ def report_process_app(request:HttpRequest):
     return JsonResponse(response_data)
 
 
-def delete_user_process(request:HttpRequest):
+def delete_user_common(request:HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
@@ -2543,15 +2535,17 @@ def delete_user_process(request:HttpRequest):
         response_data={"result":"request_broken_error"}
         my_functions.error_log("2245354423")
         return JsonResponse(response_data)
-    cono=connection_to_user_db(request=request,request_json_data=request_data)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     if(cono.session.user_id>=1):
         user_id=cono.session.user_id
         password=request_data["password"]
         query="SELECT password FROM user_data_table WHERE user_id={};".format(user_id)
         cono.cursor.execute(query)
         result = cono.cursor.fetchone()
-        if(argon2.verify(password + secret_values.password_salt, result[0])):
-            query="UPDATE user_data_table SET username='退会したユーザー',mailaddress='deleted_user_{}',user_profile='退会したユーザーです' where user_id={}".format(user_id,user_id)
+        if(argon2.verify(password + password_salt, result[0])):
+            query="UPDATE user_data_table SET username='退会したユーザー',user_profile='退会したユーザーです' where user_id={}".format(user_id)
+            cono.cursor.execute(query)
+            query="UPDATE user_secret_data_table SET mailaddress='deleted_user_{}',password='deleted_user_{}' where user_id={}".format(user_id,user_id,user_id)
             cono.cursor.execute(query)
             query="DELETE FROM user_session_table WHERE user_id={};".format(user_id)
             cono.cursor.execute(query)
@@ -2563,3 +2557,33 @@ def delete_user_process(request:HttpRequest):
         response_data["result"]="incorrect_session"
     cono.terminate_connection()
     return JsonResponse(response_data)
+def delete_user_process(request:HttpRequest):
+    return delete_user_common(request=request,from_app_flag=False)
+@csrf_exempt
+def delete_user_process_app(request:HttpRequest):
+    return delete_user_common(request=request,from_app_flag=True)
+
+@csrf_exempt
+def get_unread_notification_flag(request:HttpRequest):
+    response_data={}
+    try:
+        request_data = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        response_data={"result":"request_broken_error"}
+        my_functions.error_log("23434234491")
+        return JsonResponse(response_data)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    if(cono.session.user_id>=1):
+        query="select exist_unread_notification_flag from user_notification_table where user_id={};".format(cono.session.user_id)
+        cono.cursor.execute(query)
+        result=cono.cursor.fetchone()
+        response_data["exist_unread_notification_flag"]=result[0]
+        response_data["result"]="success"
+    else:
+        response_data["result"]="incorrect_session"
+    cono.terminate_connection()
+    return JsonResponse(response_data)
+
+@csrf_exempt
+def collect_error(request:HttpRequest):
+    return HttpResponse("")
