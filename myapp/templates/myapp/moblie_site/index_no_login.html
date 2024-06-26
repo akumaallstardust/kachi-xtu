@@ -1,0 +1,122 @@
+{% extends 'myapp/moblie_site/base.html' %}
+<!---->
+{% load static %}
+<!--<-->
+{% block head %}
+<title>カチッ | ネタ、アイデア投稿サイト</title>
+{% endblock %}
+{% block content %}
+<div class="index_box">
+    <div class="index_box_s">
+        <div class="index_text">"カチッ"について</div>
+        <div class="index_text_d">
+            "カチッ"はアイデア、ネタを投稿するサイトです。
+            キャラや技などの<br>創作物の設定、シナリオのプロット、一発ギャグのネタなど、<br>アイデアと呼べるものは何でも投稿可能! <span>
+                <p class="index_text_d_h">一部利用規約で禁止されているものを除き</p>
+            </span>
+        </div>
+    </div>
+    <div class="index_box_s">
+        <div class="index_text">アイデアの利用は自由</div>
+        <div class="index_text_d">投稿されたアイデアの利用は自由! 　クレジット不要! <br><span>
+                <p class="index_text_d_h">投稿されたアイデアの利用によって生じた損失については、開発者は責任を負いません</p>
+            </span></div>
+    </div>
+    <div class="index_box_s">
+        <div class="index_text">コメントでアイデアの改善</div>
+        <div class="index_text_d">コメントによるクオリティアップが可能! 　今なら開発者によるコメントを保証!</div>
+    </div>
+    <div class="index_signup_box">
+
+        <div class="username_input_box" style="margin-top: 0px;">
+            <h3 style="margin-top: 0vw; margin-bottom: 2vw;">ユーザー登録</h3>
+            <input class="username_input" id="username_input" id="username_input" type="text" name="username"
+                form="signup_form" maxlength="30" size="25" placeholder="ニックネーム" />
+        </div>
+        <div class="mailaddress_input_box" style="margin-top: 3vh;">
+            <input class="mailaddress_input" id="mailaddress_input" type="email" name="mailaddress" form="send"
+                maxlength="255" size="40" placeholder="メールアドレス"/>
+        </div>
+        <div class="password_input_box" style="margin-top: 3vh;">
+            <input class="password_input" id="password_input" type="password" name="password" form="send"
+                maxlength="255" size="40" placeholder="パスワード" />
+        </div><br>
+        <a  href="{% url 'home' %}anytext/riyouki/"><div class="riyouki_link_index">利用規約</div></a>
+        <button style="width: 40vw;margin-top: 3vw;" class="general_button_large" type="button"
+            onclick="submit_user_data()">登録</button>
+
+
+        <a href="{% url 'home' %}login/">
+            <div class="login_to_signup">
+                ログインはこちら
+            </div>
+        </a>
+
+    </div>
+</div>
+{% endblock %}
+{% block script %}
+<script>
+    const username_input = document.getElementById("username_input")
+    username_input.addEventListener("input", () => {
+        let censored_text = username_input.value.replace(/</g, "＜")
+        censored_text = censored_text.replace(/>/g, "＞")
+        censored_text = censored_text.replace(/\n/g, "")
+        censored_text = censored_text.replace(/\r/g, "")
+        censored_text = censored_text.replace(username_exclusion_pattern, "")
+        username_input.value = censored_text
+    })
+
+    document.getElementById("password_input").addEventListener("input", () => {
+        if (password_pattern.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value != "") {
+            alert("パスワードに使用可能な文字は英数字と_?!#`$のみです")
+            document.getElementById("password_input").value = ""
+        }
+    })
+    function submit_user_data() {
+        let username = document.getElementById("username_input").value
+        let mailaddress = document.getElementById("mailaddress_input").value
+        let password = document.getElementById("password_input").value
+        if (username.length == 0) { alert("ニックネームを入力してください") }
+        else if (username_exclusion_pattern.test(username)) { alert("ニックネームにその文字は使えません") }//文字数チェックは別
+        else if (mailaddress_pattern.test(mailaddress) == false) { alert("メールアドレスが不正です") }//文字数チェックも含む
+        else if (password.length == 0) { alert("パスワードを入力してください") }
+        else if (password_pattern.test(password) == false) { alert("パスワードに使用可能な文字は英数字と_?!#`$のみです") }
+        else {
+
+            let request_json_data = {
+                password: password,
+                username: username,
+                mailaddress: mailaddress,
+            }
+            fetch("{% url 'home' %}signup/process/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["result"] == "success") {
+                        document.cookie = `session_id_1=${data["session_id_1"]}; path=/`
+                        document.cookie = `session_id_2=${data["session_id_2"]}; path=/`
+                        alert("ユーザー登録に成功しました")
+                        location.href = ("{% url 'home' %}mypage/")
+                    }
+                    else if (data["result"] == "request_broken_error") {
+                        alert("通信エラー\nもう一度送信してください")
+                    }
+                    else if (data["result"] == "username_overlap") {
+                        alert("このニックネームはすでに使用されています\n別のものに変えてください")
+                    }
+                    else if (data["result"] == "mailaddress_overlap") {
+                        alert("このメールアドレスはすでに使用されています\n別のものに変えてください")
+                    }
+                })
+        }
+    }
+
+</script>
+{% endblock %}

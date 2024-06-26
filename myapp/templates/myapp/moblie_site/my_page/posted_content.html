@@ -1,0 +1,225 @@
+{% extends 'myapp/moblie_site/base.html' %}
+
+<!---->
+{% load static %}
+<!--<-->
+{% block content %}
+<h3>
+    投稿作品
+</h3>
+{% endblock %}
+{% block out_of_box %}
+
+<div id="gray_out_search_page" class="gray_out_search_page" style="display: none;">
+    <div id="discussion_box" class="discussion_box" style="display: none;">
+
+    </div>
+</div>
+<form id="report_form" action="{% url 'home' %}report/" method="GET">{% csrf_token %}
+    <input id="report_subject_category" type="hidden" name="subject_category" form="report_form" value="post" />
+    <input id="report_subject_id" type="hidden" name="subject_id" form="report_form" value="1" />
+</form>
+{% endblock %}
+{% block script %}
+<script src="{% static 'myapp/scripts/parts.js' %}"></script>
+
+<script>
+    const main_middle = document.getElementById("main_middle")
+    main_middle.classList.add("main_middle_serach")
+    const gray_out_search_page = document.getElementById("gray_out_search_page")
+    function add_br(el, br_conut = 1) {
+        for (let i = 0; i < br_conut; i++) {
+            let new_br = document.createElement("br")
+            el.appendChild(new_br)
+        }
+    }
+    function add_border(el, br_conut = 1) {
+        for (let i = 0; i < br_conut; i++) {
+            let new_border = document.createElement("div")
+            new_border.classList.add("pale_border")
+            el.appendChild(new_border)
+        }
+    }
+    function enlarge_right_box() {
+        main_middle.style.left = "0%"
+        sub_right.style.left = "60%"
+        sub_left.style.width = "0%"
+        sub_right.style.width = "40%"
+    }
+    const user_id = Number(`{{user_id}}`)
+    const username = `{{username}}`
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    const session_id_key_1 = 'session_id_1'
+    const session_id_key_2 = 'session_id_2'
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1]
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1]
+
+    const onevw = document.documentElement.clientWidth / 100
+    const onevh = document.documentElement.clientHeight / 100
+
+    let discussion_box = document.getElementById("discussion_box")
+    let discussion_box_opened = false
+    let discussion_box_opened_content_id
+    let request_json_data
+
+    let amount_of_displayd_comment = 0
+    let comment_id_list = []
+    let comment_content_list = []
+    let parent_comment_id_list = []
+    let comment_user_id_list = []
+    let comment_username_list = []
+    let comment_date_list = []
+    let child_comment_open_flag_list = []
+
+    let dieplayed_post_number = Number(`{{amount_of_displayed_post}}`)
+    let page_number = Number(`{{page_number}}`)
+    let total_page_number = Number(`{{total_page_number}}`)
+    let content_id_list = `{{content_id_combined}}`.split("<")
+    let title_list = `{{title_combined}}`.split("<")
+    let content_list = `{{content_combined}}`.split("<")
+    let user_id_list = `{{user_id_combined}}`.split("<")
+    let user_name_list = `{{user_name_combined}}`.split("<")
+    let overview_list = `{{overview_combined}}`.split("<")
+    let word_counts_list = `{{word_counts_combined}}`.split("<")
+    let tags_list = `{{tags_combined}}`.split("<")
+    let my_review_list = `{{my_review_combined}}`.split("<")
+    let like_counts_list = `{{like_counts_combined}}`.split("<")
+    let dislike_counts_list = `{{dislike_counts_combined}}`.split("<")
+    let post_date_list = `{{post_date_combined}}`.split("<")
+    let post_dict_list = []
+    for (let i = 0; i < dieplayed_post_number; i++) {
+        post_dict_list[i] = {
+            content_id: Number(content_id_list[i]),
+            title: title_list[i],
+            content: content_list[i],
+            overview: overview_list[i],
+            tags: tags_list[i],
+            post_date: post_date_list[i],
+            user_id: Number(user_id_list[i]),
+            username: user_name_list[i],
+            my_review: my_review_list[i],
+            like_count: Number(like_counts_list[i]),
+            dislike_count: Number(dislike_counts_list[i]),
+        }
+    }
+
+    function relocation_page_box() {
+        main_middle.style.height = `100%`
+        main_middle.style.height = `${document.documentElement.scrollHeight}px`
+    }
+
+    ///ここからcontent表示
+    let post_box_list = []
+    if (dieplayed_post_number == -1) {
+    }
+    else if (dieplayed_post_number == 0) {
+        let no_content = document.createElement("div")
+        no_content.textContent = "この条件に合う投稿はありません"
+        no_content.classList.add("no_content")
+        main_middle.appendChild(no_content)
+    }
+    else if (dieplayed_post_number >= 1) {
+
+        if (total_page_number != 1) {
+            let top_transition_page_box = document.createElement("div")
+            top_transition_page_box.classList.add("transition_page_box")
+            top_transition_page_box.id = "top_transition_page_box"
+            main_middle.appendChild(top_transition_page_box)
+
+            let top_current_page_box = document.createElement("button")
+            top_current_page_box.classList.add("current_page_box")
+            top_current_page_box.id = "top_current_page_box"
+            top_current_page_box.textContent = String(page_number)
+            top_transition_page_box.appendChild(top_current_page_box)
+
+            if (page_number != 1) {
+                let top_previous_page_button = document.createElement("button")
+                top_previous_page_button.classList.add("previous_page_button")
+                top_previous_page_button.id = "top_previous_page_button"
+                top_previous_page_button.title = "前のページ"
+                top_previous_page_button.textContent = String(page_number - 1)
+                top_transition_page_box.appendChild(top_previous_page_button)
+                top_previous_page_button.addEventListener("click", () => {
+                    document.getElementById("page_number").value = String(page_number - 1)
+                    document.getElementById('datailed_search').submit();
+                })
+            }
+
+            if (total_page_number != page_number) {
+                let top_next_page_button = document.createElement("button")
+                top_next_page_button.classList.add("next_page_button")
+                top_next_page_button.id = "top_next_page_button"
+                top_next_page_button.textContent = String(page_number + 1)
+                top_next_page_button.title = "次のページ"
+                top_transition_page_box.appendChild(top_next_page_button)
+                top_next_page_button.addEventListener("click", () => {
+                    document.getElementById("page_number").value = String(page_number + 1)
+                    document.getElementById('datailed_search').submit();
+                })
+            }
+        }
+        
+        for (let i = 0; i < dieplayed_post_number; i++) {
+            post_box_list[i] = new post_moblie(
+                {
+                    display_delete_post_button: true,
+                    out_of_main: document.getElementById("gray_out_search_page"),
+                },
+                main_middle,
+                post_dict_list[i]
+            )
+        }
+
+        if (total_page_number != 1) {
+            let bottom_transition_page_box = document.createElement("div")
+            bottom_transition_page_box.classList.add("transition_page_box")
+            bottom_transition_page_box.id = "bottom_transition_page_box"
+            main_middle.appendChild(bottom_transition_page_box)
+
+            let bottom_current_page_box = document.createElement("button")
+            bottom_current_page_box.classList.add("current_page_box")
+            bottom_current_page_box.id = "bottom_current_page_box"
+            bottom_current_page_box.textContent = String(page_number)
+            bottom_transition_page_box.appendChild(bottom_current_page_box)
+
+            if (page_number != 1) {
+                let bottom_previous_page_button = document.createElement("button")
+                bottom_previous_page_button.classList.add("previous_page_button")
+                bottom_previous_page_button.id = "bottom_previous_page_button"
+                bottom_previous_page_button.title = "前のページ"
+                bottom_previous_page_button.textContent = String(page_number - 1)
+                bottom_transition_page_box.appendChild(bottom_previous_page_button)
+                bottom_previous_page_button.addEventListener("click", () => {
+                    document.getElementById("page_number").value = String(page_number - 1)
+                    document.getElementById('datailed_search').submit();
+                })
+            }
+
+            if (total_page_number != page_number) {
+                let bottom_next_page_button = document.createElement("button")
+                bottom_next_page_button.classList.add("next_page_button")
+                bottom_next_page_button.id = "bottom_next_page_button"
+                bottom_next_page_button.textContent = String(page_number + 1)
+                bottom_next_page_button.title = "次のページ"
+                bottom_transition_page_box.appendChild(bottom_next_page_button)
+                bottom_next_page_button.addEventListener("click", () => {
+                    document.getElementById("page_number").value = String(page_number + 1)
+                    document.getElementById('datailed_search').submit();
+                })
+            }
+        }
+
+    }
+
+    window.addEventListener("load", () => {
+        relocation_page_box()
+    })
+
+    window.addEventListener('scroll', function () {
+        if (discussion_box_opened) {
+            relocation_page_box()
+        }
+    });
+</script>
+{% endblock %}

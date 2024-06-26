@@ -1,0 +1,113 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="shortcut icon" type="image/png" href="{% static 'myapp/favicon.ico' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'myapp/css/style_moblie.css' %}">
+  {% block head %}{% endblock %}
+  <form>{% csrf_token %}
+  </form>
+</head>
+
+<body id="main_body">
+  <header style="height: 10vw;" id="site-title">
+    <div class="site_header">
+      <div class="header_image">
+        <a class="header_image" href="{% url 'home' %}">
+          <div class="header_text">Kachi-xtu</div>
+        </a>
+      </div>
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}search/">
+        <div class="to_search_page">
+          <svg role="img" xmlns="http://www.w3.org/2000/svg" width="10vw" height="10vw" viewBox="0 0 24 24"
+            aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+            stroke-linejoin="miter" fill="none" color="#5a9fa6">
+            <title id="searchIconTitle">検索</title>
+            <path d="M14.4121122,14.4121122 L20,20" />
+            <circle cx="10" cy="10" r="6" />
+          </svg>
+        </div>
+      </a>
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}post/">
+        <div class="to_write_page">
+          <svg role="img" xmlns="http://www.w3.org/2000/svg" width="10vw" height="10vw" viewBox="0 0 24 24"
+            aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+            stroke-linejoin="miter" fill="none" color="#5a9fa6">
+            <title id="editIconTitle">投稿</title>
+            <path
+              d="M18.4142136 4.41421356L19.5857864 5.58578644C20.366835 6.36683502 20.366835 7.63316498 19.5857864 8.41421356L8 20 4 20 4 16 15.5857864 4.41421356C16.366835 3.63316498 17.633165 3.63316498 18.4142136 4.41421356zM14 6L18 10" />
+          </svg>
+        </div>
+      </a>
+
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'home' %}notification/">
+        <div class="to_notification_page">
+          <svg role="img" xmlns="http://www.w3.org/2000/svg" width="10vw" height="10vw" viewBox="0 0 24 24"
+            aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+            stroke-linejoin="miter" fill="none" color="#5a9fa6">
+            <title id="bellIconTitle">通知</title>
+            <path stroke-linejoin="round"
+              d="M10.5,4.5 C12.1666667,4.5 13.8333333,4.5 15.5,4.5 C17.5,4.5 18.8333333,3.83333333 19.5,2.5 L19.5,18.5 C18.8333333,17.1666667 17.5,16.5 15.5,16.5 C13.8333333,16.5 12.1666667,16.5 10.5,16.5 L10.5,16.5 C7.1862915,16.5 4.5,13.8137085 4.5,10.5 L4.5,10.5 C4.5,7.1862915 7.1862915,4.5 10.5,4.5 Z"
+              transform="rotate(90 12 10.5)" />
+            <path d="M11,21 C12.1045695,21 13,20.1045695 13,19 C13,17.8954305 12.1045695,17 11,17"
+              transform="rotate(90 12 19)" />
+          </svg>
+          <svg id="no_read_notification_svg" style="display: none;position: absolute;left:7.5vw;" role="img"
+            xmlns="http://www.w3.org/2000/svg" width="5vw" height="5vw" viewBox="0 0 24 24"
+            aria-labelledby="bellIconTitle" stroke="#ffaf00" stroke-width="2" stroke-linecap="square"
+            stroke-linejoin="miter" fill="none" color="#5a9fa6">
+            <title id="bellIconTitle">未読の通知が存在します</title>
+            <Circle cx=2vw cy=2vw r=1vw fill="#ffaf00" />
+          </svg>
+          <script>if ("{{unread_notification_flag}}" == "y") {
+              document.getElementById("no_read_notification_svg").style.display = "inline"
+            }</script>
+        </div>
+      </a>
+
+      <a style="position: absolute; text-decoration:none; top: 0; left: 0;" href="{% url 'signup' %}">
+        <div class="to_signup_page" id="to_signup_page">
+          登録
+        </div>
+      </a>
+
+      <a style="text-decoration:none;" href="{% url 'login_page' %}">
+        <div class="to_login_page" id="to_login_page">
+          ログイン
+        </div>
+      </a>
+      <div class="to_mypage_link" id="to_mypage_box">
+        <a id="to_mypage_box_link" href="{% url 'home' %}mypage/">
+          <img class="icon_mini" style="height: 9vw; width: 9vw; margin: 0.5vw;"
+            src="/media/user_icons/user_icon_mini_{{user_id}}.png" alt="icon">
+        </a>
+      </div>
+  </header>
+  <div class="parent_box">
+    <div class="main_middle" id="main_middle">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+  <footer>
+    
+  </footer>
+  {% block out_of_box %}{% endblock %}
+</body>
+<script>//競合回避のため全ての変数はvarを付ける
+  var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+  var site_url = `{% url 'home' %}`//外部スクリプトで読み込むよう
+  var my_user_id = Number("{{user_id}}");
+  if (my_user_id <= 0) {
+    document.getElementById("to_mypage_box").classList.add("hidden")
+  } else {
+    document.getElementById("to_login_page").classList.add("hidden")
+    document.getElementById("to_signup_page").classList.add("hidden")
+  }
+</script>
+{% block script %}
+{% endblock %}
+
+</html>

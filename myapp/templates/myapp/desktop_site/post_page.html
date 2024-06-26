@@ -1,0 +1,208 @@
+{% extends 'myapp/base.html' %}
+{% block head %}
+<title>投稿</title>
+{% endblock %}
+{% block content %}
+<h2>タイトル</h2>
+<div class="title_input_box">
+    <input class="title_input" id="title_input" type="text" name="title" form="post" maxlength="50" title="タイトル入力" placeholder="タイトルを入力"/>
+</div><br>
+<h2>内容</h2>
+<div class="content_input_box">
+    <div class="content_textarea_dummy" id="content_textarea_dummy" aria-hidden="true">内容を入力する</div>
+    <textarea id="content_textarea" class="content_textarea" type="text" name="content" form="post" maxlength="20000"
+        title="内容入力"></textarea>
+</div><br>
+<h2>概要</h2>
+<div class="overview_input_box">
+    <div id="overview_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true">概要を入力する</div>
+    <textarea id="overview_textarea" class="overview_textarea" type="text" name="overview" form="post" maxlength="100"
+        title="概要入力"></textarea>
+</div><br>
+<div class="tags_box" id="tags_box">
+    <div class="tag_input_box">
+        <div class="tag_input_dummy" id="tag_input_dummy_1" aria-hidden="true">タグを入力</div>
+        <input class="tag_input" id="tag_input_1" type="text" form="post" maxlength="20" />
+    </div>
+    <button class="add_tag_button" id="add_tag_button" type="button" onclick="add_tag()">+</button>
+    <input type="hidden" id="joined_tags" name="joined_tags" value="" form="post" aria-hidden="true">
+</div>
+<div class="post_to_database_box">
+    <button class="post_button" id="post_button" type="button" onclick="check_and_post()">投稿</button>
+    <form name="post_form" id="post" action="{% url 'home' %}post/process/" method="POST">{%csrf_token %}
+    </form>
+</div>
+<script>
+
+</script>
+{% endblock %}
+{% block out_of_box %}
+
+
+<script>
+    const user_id = Number("{{user_id}}")
+    const session_id_key_1 = 'session_id_1';
+    const session_id_key_2 = 'session_id_2';
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1];
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1];
+    if (user_id <= 0) {
+        location.href = ("{% url 'home' %}signup/")
+    }
+    function ready_to_post() {
+        var blackout = document.getElementById("blackout_normal_window");
+        var overview_tags_form = document.getElementById("dicision_tags_overview");
+        blackout.style.display = "inline"
+        overview_tags_form.style.display = "inline"
+    }
+    var input_content = false;
+    var input_overview = false;
+    const content_exclusion_patteen = /(<|>|\u200b|\t)+/g
+    document.getElementById("title_input").addEventListener("input", () => {
+        let e1 = document.getElementById("title_input")
+        e1.value = e1.value.replace(content_exclusion_patteen, "")
+    })
+    document.getElementById("content_textarea").addEventListener('input', () => {
+        let e2 = document.getElementById("content_textarea")
+        let dummy = document.getElementById('content_textarea_dummy')
+        if (input_content == false) {
+            input_content = true
+            dummy.textContent = ""
+            dummy.style.visibility = "hidden"
+        }
+        dummy.textContent = e2.value + '\u200b'
+        e2.value = e2.value.replace(content_exclusion_patteen, "")
+        e2.value = e2.value.replace(/\n\r/g, "\n")
+        e2.value = e2.value.replace(/\r/g, "\n")
+    })
+    document.getElementById("overview_textarea").addEventListener('input', () => {
+        let e3 = document.getElementById("overview_textarea")
+        let dummy3 = document.getElementById("overview_textarea_dummy")
+        if (input_overview == false) {
+            input_overview = true
+            dummy3.textContent = ""
+            dummy3.style.visibility = "hidden"
+        }
+        dummy3.textContent = e3.value + '\u200b'
+        e3.value = e3.value.replace(content_exclusion_patteen, "")
+        e3.value = e3.value.replace(/\n\r/g, "\n")
+        e3.value = e3.value.replace(/\r/g, "\n")
+        let matches = e3.value.match(/\n/g)
+        let new_line_count = matches ? matches.length : 0
+        if (new_line_count >= 3) {
+            let texts = e3.value.split("\n")
+            e3.value = ""
+            for (let i = 0; i < texts.length; i++) {
+                e3.value += texts[i]
+                if (i <= 1) {//二回まで
+                    e3.value += "\n"//new_line_count >= 3なので無条件で改行が足せる
+                }
+            }
+
+        }
+    })
+    const tags_exclusion_patteen = /(<|>| |　|,|\u200b|\t)+/g
+    var tags_count = 1;
+    const add_tag_button = document.getElementById("add_tag_button");
+    function focus_tag_input(conut) {
+        document.getElementById(`tag_input_dummy_${conut}`).style.visibility = "hidden"
+    }
+    function input_tag_input(conut) {
+        document.getElementById(`tag_input_${conut}`).value = document.getElementById(`tag_input_${conut}`).value.replace(tags_exclusion_patteen, "")
+    }
+    document.getElementById("tag_input_1").addEventListener("focus", focus_tag_input.bind(null, 1))
+    function add_tag() {
+        if (tags_count <= 9)//タグが9個のときまでタグ入力ボックスを一つ追加つまりタグは最大10個
+        {
+            tags_count += 1;
+            var tag_input_box = document.createElement("div");
+            tag_input_box.classList.add("tag_input_box");
+            add_tag_button.before(tag_input_box);
+            var tag_input_dummy = document.createElement("div");
+            tag_input_dummy.classList.add("tag_input_dummy");
+            tag_input_dummy.id = `tag_input_dummy_${tags_count}`
+            tag_input_dummy.textContent = "タグを入力"
+            tag_input_box.appendChild(tag_input_dummy)
+            var tag_input = document.createElement("input");
+            tag_input.classList.add("tag_input")
+            tag_input.id = `tag_input_${tags_count}`
+            tag_input.type = "text"
+            tag_input.maxLength = "20"
+            tag_input.addEventListener("focus", focus_tag_input.bind(null, tags_count))
+            tag_input.addEventListener("input", input_tag_input.bind(null, tags_count))
+            tag_input_box.appendChild(tag_input)
+        }
+    }
+    function check_and_post() {
+        let title = document.getElementById("title_input").value
+        let content = document.getElementById("content_textarea").value
+        let overview = document.getElementById("overview_textarea").value
+        if (document.getElementById("title_input").value == "") { alert("タイトルを入力してください") }
+        else if (document.getElementById("content_textarea").value == "") { alert("内容を入力してください") }
+        else if (content_exclusion_patteen.test(title)) {
+
+        }
+        else if (content_exclusion_patteen.test(content)) {
+
+        }
+        else if (content_exclusion_patteen.test(overview)) {
+
+        }
+        else if (title.length >= 51) {
+
+        }
+        else if (content.length >= 20001) {
+
+        }
+        else if (overview.length >= 101) {
+
+        }
+        else {
+            joined_tags = document.getElementById("joined_tags")
+            var tags_error = false
+            for (let i = 0; i < tags_count; i++) {
+                if (tags_exclusion_patteen.test(document.getElementById(`tag_input_${i + 1}`).value)) {
+                    tags_error = true;
+                }
+                joined_tags.value += document.getElementById(`tag_input_${i + 1}`).value//タグのidは1から数える
+                if (i < (tags_count - 1)) { joined_tags.value += "," }//最後のタグではないなら
+            }
+            if (tags_error) {
+                alert("タグに , < > と全角半角の空白は使用できません")
+                joined_tags.value = ""
+            }
+            else {
+                request_json_data = {
+                    session_id_1: session_id_1,
+                    session_id_2: session_id_2,
+                    title: title,
+                    content: content,
+                    overview: overview,
+                    joined_tags: joined_tags
+                }
+                fetch("{% url 'home' %}add_comment/", {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                        "X-CSRFToken": csrftoken
+                    },
+                    body: JSON.stringify(request_json_data)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data["result"] == "success") {
+                            close_comment()
+                            open_comment(parent_content_id)
+                        }
+                        else if (data["result"] == "title_overlap") {
+                            alert("既に同じタイトルの投稿が存在します\nタイトルを変えてください")
+                        }
+                    })
+                joined_tags.value = ""//謎のタグが何回も追加されるバグ対策
+            }
+        }
+    }
+</script>
+</div>
+
+{% endblock %}

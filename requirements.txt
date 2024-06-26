@@ -1,0 +1,12 @@
+Django
+djangorestframework
+django-environ
+uWSGI
+mysql-connector-python
+Pillow
+Whoosh
+passlib
+argon2_cffi
+apscheduler
+django-cors-headers
+whitenoise

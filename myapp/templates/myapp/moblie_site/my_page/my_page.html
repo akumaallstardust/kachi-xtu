@@ -1,0 +1,84 @@
+{% extends 'myapp/moblie_site/base.html' %}
+
+
+{% block content %}
+<div class="gray_out_user_page">
+</div>
+<div class="user_infomation_box">
+    <div class="user_name_icon_box" id="user_name_icon_box">
+        <div class="user_page_icon_box">
+            <a href="{% url 'home' %}changeuserinfo/"><img class="user_page_icon"
+                    src="/media/user_icons/user_icon_{{user_id}}.png" alt="icon"></a>
+        </div>
+        <div class="user_page_name">{{username}}</div>
+        <div class="user_page_user_id">ID : {{user_id}}</div>
+    </div>
+    <div id="user_page_profile" class="user_page_profile">{{user_profile}}</div>
+    <div class="my_page_option_box">
+        <a href="{% url 'home' %}viewhistory/">
+            <div class="my_page_option" id="my_page_option_changeuserinfo">閲覧履歴</div>
+        </a>
+        <a href="{% url 'home' %}postedcontent/">
+            <div class="my_page_option" id="my_page_option_changeuserinfo">投稿作品</div>
+        </a>
+        <a href="{% url 'home' %}changeuserinfo/">
+            <div class="my_page_option" id="my_page_option_changeuserinfo">ユーザー情報変更</div>
+        </a>
+        <a href="{% url 'home' %}changepassword/">
+            <div class="my_page_option" id="my_page_option_changeuserinfo">パスワード変更</div>
+        </a>
+        <div class="my_page_option" id="my_page_option_logout">ログアウト</div>
+        <a href="{% url 'home' %}deleteaccount/">
+            <div style="color: red;" class="my_page_option" id="my_page_option_changeuserinfo">アカウント削除</div>
+        </a>
+    </div>
+</div>
+<script>
+    function addbr(el, br_conut = 1) {
+        for (let i = 0; i < brconut; i++) {
+            let new_br = document.createElement("br")
+            el.appendChild(new_br)
+        }
+    }
+    function redirect_to_page(link_my_site) {
+        location.href = (`{% url 'home' %}${link_my_site}/`)
+    }
+    const user_id = Number(`{{user_id}}`)
+    const username = `{{username}}`
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    const session_id_key_1 = 'session_id_1'
+    const session_id_key_2 = 'session_id_2'
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1]
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1]
+    if (`{{user_profile}}` == "") {
+        document.getElementById("user_page_profile").textContent = "プロフィールが設定されていません"
+        document.getElementById("user_page_profile").style.opacity = "0.4"
+    }
+    document.getElementById("my_page_option_logout").addEventListener("click",() => {
+        let request_json_data = {
+            session_id_1: session_id_1,
+            session_id_2: session_id_2,
+        }
+        fetch("{% url 'home' %}report_process/", {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify(request_json_data)
+        })
+            .then(response => {
+                document.cookie = 'session_id_1=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+                document.cookie = 'session_id_2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+                location.href = (`{% url 'home' %}`)
+            })
+            .catch((error) => {
+                document.cookie = 'session_id_1=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+                document.cookie = 'session_id_2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+                location.href = (`{% url 'home' %}`)
+            })
+
+    })
+</script>
+{% endblock %}

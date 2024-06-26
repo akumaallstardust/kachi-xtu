@@ -1,0 +1,677 @@
+{% extends 'myapp/base.html' %}
+
+
+{% block content %}
+<div class="datailed_search_box">
+    <form id="datailed_search" action="{% url 'home' %}search/" method="GET">{% csrf_token %}
+        <input type="hidden" name="page_number" form="datailed_search" value="1" />
+    </form>
+    <div class="datailed_search_input_box">
+        検索
+        <input class="datailed_search_input" id="datailed_search_input" name="search_words" type="text"
+            style=" margin-bottom: 0.5vw;" form="datailed_search" placeholder="検索ワードを入力"><br>
+        除外
+        <input class="datailed_search_input" id="datailed_search_input" name="search_words_exclude" type="text"
+            style=" margin-bottom: 1vw;" form="datailed_search" placeholder="除外ワードを入力">
+    </div>
+    <div class="search_order_select_box">
+        並び順<select name="post_order" id="post_order_select" form="datailed_search">
+            <option value="new_post">投稿日(新しい順)</option>
+            <option value="old_post">投稿日(古い順)</option>
+            <option value="view_many_total">閲覧数(多い順)</option>
+            <option value="view_many_few">閲覧数(少ない順)</option>
+            <option value="like_count_many">高評価(多い順)</option>
+            <option value="like_count_few">高評価(少ない順)</option>
+            <option value="dislike_count_many">低評価(多い順)</option>
+            <option value="dislike_count_few">低評価(少ない順)</option>
+            <option value="like_dislike_ratio_much">平均評価(高い順)</option>
+            <option value="like_dislike_ratio_little">平均評価(低い順)</option>
+        </select>
+    </div>
+    <div class="center">
+        <button class="general_button_medium" style="width: 8vw; margin-top: 1vw;" type="submit"
+            form="datailed_search">検索</button>
+    </div>
+</div>
+{% endblock %}
+{% block sub_right %}
+<div id="discussion_box" class="discussion_box" style="display: none;">
+
+</div>
+{% endblock %}
+{% block script %}
+<script>
+    const main_middle = document.getElementById("main_middle")
+    const sub_right = document.getElementById("sub_right")
+    const sub_left = document.getElementById("sub_left")
+    const content_exclusion_patteen = /(<|>|\u200b|\t)+/g
+    function add_br(el, br_conut = 1) {
+        for (let i = 0; i < br_conut; i++) {
+            let new_br = document.createElement("br")
+            el.appendChild(new_br)
+        }
+    }
+    function add_border(el, br_conut = 1) {
+        for (let i = 0; i < br_conut; i++) {
+            let new_border = document.createElement("div")
+            new_border.classList.add("pale_border")
+            el.appendChild(new_border)
+        }
+    }
+    function restore_layout() {
+        main_middle.style.left = "20%"
+        sub_right.style.left = "80%"
+        sub_left.style.left = "0%"
+        main_middle.style.width = "60%"
+        sub_left.style.width = "20%"
+        sub_right.style.width = "20%"
+    }
+    function enlarge_right_box() {
+        main_middle.style.left = "0%"
+        sub_right.style.left = "60%"
+        sub_left.style.width = "0%"
+        sub_right.style.width = "40%"
+    }
+    const user_id = Number("{{user_id}}")
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    const session_id_key_1 = 'session_id_1';
+    const session_id_key_2 = 'session_id_2';
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1];
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1];
+    var discussion_box_opened = false
+    var discussion_box_opened_content_id
+    var request_json_data
+    var dieplayed_post_number = Number(`{{amount_of_displayed_post}}`)
+    var content_id_list = split_by_less_than(`{{content_id_combined}}`)
+    var title_list = split_by_less_than(`{{title_combined}}`)
+    var content_list = split_by_less_than(`{{content_combined}}`)
+    var user_id_list = split_by_less_than(`{{user_id_combined}}`)
+    var overview_list = split_by_less_than(`{{overview_combined}}`)
+    var word_counts_list = split_by_less_than(`{{word_counts_combined}}`)
+    var tags_list = split_by_less_than(`{{tags_combined}}`)
+    var my_review_list = split_by_less_than(`{{my_review_combined}}`)
+    var like_counts_list = split_by_less_than(`{{like_counts_combined}}`)
+    var dislike_counts_list = split_by_less_than(`{{dislike_counts_combined}}`)
+    var post_date_list_temp = split_by_less_than(`{{post_date_combined}}`)
+    var post_date_list = []
+    for (let i = 0; i < post_date_list_temp.length; i++) {
+        let post_date_temp = post_date_list_temp[i].split(",")
+        post_date_list[i] = []
+        for (let j = 0; j < post_date_temp.length; j++) {
+            post_date_list[i][j] = post_date_temp[j]
+        }
+    }
+    var user_name_list = split_by_less_than(`{{user_name_combined}}`)
+    function set_text_with_newline(text) {
+        var split_text = text.split(/\r\n|\n/)
+        var return_text = ""
+        for (let i = 0; i < split_text.length; i++) {
+            if (i != split_text.length - 1) {
+                return_text += (split_text[i] + "<br>")
+            }
+        }
+        return return_text
+    }
+
+    function split_by_less_than(text) {
+        let result = text.split("&lt;")
+        return result
+    }
+
+    function post_comment(parent_content_id, parent_comment_id = 0, textarea_id) {
+        if (document.getElementById(textarea_id).value != "") {
+            request_json_data = {
+                session_id_1: session_id_1,
+                session_id_2: session_id_2,
+                content_id: String(parent_content_id),
+                comment_content: document.getElementById(textarea_id).value,
+                parent_comment_id: String(parent_comment_id)
+            }
+            fetch("{% url 'home' %}add_comment/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["result"] == "success") {
+                        close_comment()
+                        open_comment(parent_content_id)
+                    }
+                })
+        }
+        else {
+            alert("内容がないよう")
+        }
+    }
+
+    function open_comment(selected_content_id) {///selected_content_idはstr
+        if (discussion_box_opened == false || discussion_box_opened_content_id != selected_content_id) {
+            request_json_data = {
+                content_id: selected_content_id
+            }
+            fetch("{% url 'home' %}get_discussion_data/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("discussion_box").remove()///一度リセット
+                    let discussion_box = document.createElement("div")
+                    discussion_box.style.display = "block"
+                    discussion_box.id = "discussion_box"
+                    discussion_box.classList.add("discussion_box")
+                    sub_right.appendChild(discussion_box)
+                    set_height_discussion_box()
+                    if (data["result"] == "success") {
+                        enlarge_right_box()
+                        discussion_box_opened = true
+                        discussion_box_opened_content_id = selected_content_id
+                        let add_comment_box = document.createElement("div")
+                        add_comment_box.id = "add_comment_box"
+                        add_comment_box.classList.add("add_comment_box")
+                        discussion_box.appendChild(add_comment_box)
+
+                        let add_comment_textarea_box = document.createElement("div")
+                        add_comment_textarea_box.id = "add_comment_textarea_box"
+                        add_comment_textarea_box.classList.add("add_comment_textarea_box")
+                        add_comment_box.appendChild(add_comment_textarea_box)
+
+                        let add_comment_textarea_dummy = document.createElement("div")
+                        add_comment_textarea_dummy.id = "add_comment_textarea_dummy"
+                        add_comment_textarea_dummy.classList.add("general_textarea_dummy")
+                        add_comment_textarea_dummy.ariaHidden = "true"
+                        add_comment_textarea_box.appendChild(add_comment_textarea_dummy)
+
+                        let add_comment_textarea = document.createElement("textarea")
+                        add_comment_textarea.id = "add_comment_textarea"
+                        add_comment_textarea.classList.add("add_comment_textarea")
+                        add_comment_textarea.title = "abc"
+                        add_comment_textarea.placeholder = "コメントを書く"
+                        add_comment_textarea.addEventListener("input", () => {
+                            let eee = document.getElementById("add_comment_textarea")
+                            const dummy = document.getElementById('add_comment_textarea_dummy')
+                            dummy.textContent = eee.value + '\u200b'
+                            eee.value = eee.value.replace(content_exclusion_patteen, "")
+                            eee.value = eee.value.replace(/\n\r/g, "\n")
+                            eee.value = eee.value.replace(/\r/g, "\n")
+                        })
+                        add_comment_textarea_box.appendChild(add_comment_textarea)
+
+                        post_comment_button = document.createElement("button")
+                        post_comment_button.id = "post_comment_button"
+                        post_comment_button.classList.add("post_comment_button")
+                        post_comment_button.textContent = "投稿"
+                        post_comment_button.addEventListener("click", post_comment.bind(null, selected_content_id, 0, "add_comment_textarea"))
+                        add_comment_box.appendChild(post_comment_button)
+                        if (Number(data["amount_of_displayd_comment"]) >= 1) {
+                            let amount_of_displayd_comment = Number(data["amount_of_displayd_comment"])
+                            let comment_id_list = data["comment_id_combined"].split("<")
+                            let comment_content_list = data["comment_content_combined"].split("<")
+                            let parent_comment_id_list = data["parent_comment_id_combined"].split("<")
+                            let comment_user_id_list = data["comment_user_id_combined"].split("<")
+                            let comment_username_list = data["comment_username_combined"].split("<")
+                            for (let i = 0; i < amount_of_displayd_comment; i++) {
+                                if (parent_comment_id_list[i] == "0") {
+                                    let comment_box = document.createElement("div")
+                                    comment_box.classList.add("comment_box")
+                                    comment_box.id = `comment_box_${i + 1}`
+                                    discussion_box.appendChild(comment_box)
+
+                                    let comment_id_label = document.createElement("div")
+                                    comment_id_label.id = `comment_id_label_${i + 1}`
+                                    comment_id_label.textContent = comment_id_list[i]
+                                    comment_id_label.classList.add("hidden")
+                                    comment_box.appendChild(comment_id_label)
+
+                                    let comment_user_box = document.createElement("div")
+                                    comment_user_box.id = `comment_user_box_${i + 1}`
+                                    comment_user_box.classList.add("comment_user_box")
+                                    comment_box.appendChild(comment_user_box)
+
+                                    let comment_user_icon = document.createElement("a")
+                                    comment_user_icon.id = `comment_user_icon_${i + 1}`
+                                    comment_user_icon.classList.add("comment_user_icon")
+                                    comment_user_icon.innerHTML = `<img class="comment_user_icon" src="/media/user_icons/user_icon_mini_${comment_user_id_list[i]}.png" alt="icon">`
+                                    comment_user_box.appendChild(comment_user_icon)
+
+                                    let comment_username = document.createElement("a")
+                                    comment_username.id = `comment_username_${i + 1}`
+                                    comment_username.classList.add("comment_username")
+                                    comment_username.href = `{% url 'home' %}user/${comment_user_id_list[i]}/`
+                                    comment_username.textContent = comment_username_list[i]
+                                    comment_user_box.appendChild(comment_username)
+
+                                    let comment_content = document.createElement("div")
+                                    comment_content.id = `comment_content_${i + 1}`
+                                    comment_content.classList.add("comment_content")
+                                    comment_content.innerHTML = set_text_with_newline(comment_content_list[i])
+                                    comment_box.appendChild(comment_content)
+
+                                    let open_child_comment_button_box = document.createElement("div")
+                                    open_child_comment_button_box.id = `open_child_comment_button_box_${i + 1}`
+                                    open_child_comment_button_box.classList.add("open_child_comment_button_box")
+                                    comment_box.appendChild(open_child_comment_button_box)
+
+                                    let open_child_comment_button = document.createElement("button")
+                                    open_child_comment_button.type = "button"
+                                    open_child_comment_button.textContent = "返信を見る"
+                                    open_child_comment_button.id = `open_child_comment_button_${i + 1}`
+                                    open_child_comment_button.classList.add("open_child_comment_button")
+                                    open_child_comment_button.addEventListener("click", () => {
+                                        if (document.getElementById(`child_comment_open_flag_${i + 1}`).textContent == "closed") {
+                                            document.getElementById(`child_comment_box_${i + 1}`).classList.remove("hidden")
+                                            document.getElementById(`open_child_comment_button_${i + 1}`).textContent = "返信を閉じる"
+                                            document.getElementById(`child_comment_open_flag_${i + 1}`).textContent = "opened"
+                                            let add_child_comment_box = document.createElement("div")
+                                            add_child_comment_box.id = `add_child_comment_box_${i + 1}`
+                                            add_child_comment_box.classList.add("add_child_comment_box")
+                                            document.getElementById(`child_comment_box_${i + 1}`).appendChild(add_child_comment_box)
+
+                                            let add_child_comment_textarea_box = document.createElement("div")
+                                            add_child_comment_textarea_box.id = `add_child_comment_textarea_box_${i + 1}`
+                                            add_child_comment_textarea_box.classList.add("add_child_comment_textarea_box")
+                                            add_child_comment_box.appendChild(add_child_comment_textarea_box)
+
+                                            let add_child_comment_textarea_dummy = document.createElement("div")
+                                            add_child_comment_textarea_dummy.id = `add_child_comment_textarea_dummy_${i + 1}`
+                                            add_child_comment_textarea_dummy.classList.add("general_textarea_dummy")
+                                            add_child_comment_textarea_box.appendChild(add_child_comment_textarea_dummy)
+
+                                            let add_child_comment_textarea = document.createElement("textarea")
+                                            add_child_comment_textarea.id = `add_child_comment_textarea_${i + 1}`
+                                            add_child_comment_textarea.classList.add("add_child_comment_textarea")
+                                            add_child_comment_textarea_box.appendChild(add_child_comment_textarea)
+                                            add_child_comment_textarea.addEventListener("input", () => {
+                                                let eee = document.getElementById(`add_child_comment_textarea_${i + 1}`)
+                                                const dummy = document.getElementById(`add_child_comment_textarea_dummy_${i + 1}`)
+                                                dummy.textContent = eee.value + '\u200b'
+                                                eee.value = eee.value.replace(content_exclusion_patteen, "")
+                                                eee.value = eee.value.replace(/\n\r/g, "\n")
+                                                eee.value = eee.value.replace(/\r/g, "\n")
+                                            })
+                                            let add_child_comment_button = document.createElement("button")
+                                            add_child_comment_button.id = `add_child_comment_button_${i + 1}`
+                                            add_child_comment_button.classList.add("add_child_comment_button")
+                                            add_child_comment_button.textContent = "投稿"
+                                            add_child_comment_button.addEventListener("click", post_comment.bind(null, selected_content_id, comment_id_list[i], `add_child_comment_textarea_${i + 1}`))
+                                            add_child_comment_box.appendChild(add_child_comment_button)
+                                        }
+                                        else if (document.getElementById(`child_comment_open_flag_${i + 1}`).textContent == "opened") {
+                                            document.getElementById(`child_comment_box_${i + 1}`).classList.add("hidden")
+                                            document.getElementById(`open_child_comment_button_${i + 1}`).textContent = "返信を見る"
+                                            document.getElementById(`child_comment_open_flag_${i + 1}`).textContent = "closed"
+                                            document.getElementById(`add_child_comment_box_${i + 1}`).remove()
+                                        }
+                                    })
+                                    open_child_comment_button_box.appendChild(open_child_comment_button)
+
+                                    let child_comment_box = document.createElement("div")
+                                    child_comment_box.id = `child_comment_box_${i + 1}`
+                                    child_comment_box.classList.add("child_comment_box")
+                                    child_comment_box.classList.add("hidden")
+                                    comment_box.appendChild(child_comment_box)
+
+                                    let child_comment_open_flag = document.createElement("div")
+                                    child_comment_open_flag.id = `child_comment_open_flag_${i + 1}`
+                                    child_comment_open_flag.classList.add("hidden")
+                                    child_comment_open_flag.textContent = "closed"
+                                    comment_box.appendChild(child_comment_open_flag)
+                                }
+                                else if (Number(parent_comment_id_list[i]) >= 1) {
+                                    let parent_comment_index = comment_id_list.findIndex(element => element == parent_comment_id_list[i]);
+                                    let comment_box = document.createElement("div")
+                                    comment_box.classList.add("comment_box")
+                                    comment_box.id = `comment_box_${i + 1}`
+                                    document.getElementById(`child_comment_box_${parent_comment_index + 1}`).appendChild(comment_box)
+
+                                    let comment_id_label = document.createElement("div")
+                                    comment_id_label.id = `comment_id_label_${i + 1}`
+                                    comment_id_label.textContent = comment_id_list[i]
+                                    comment_id_label.classList.add("hidden")
+                                    comment_box.appendChild(comment_id_label)
+
+
+                                    let comment_user_box = document.createElement("div")
+                                    comment_user_box.id = `comment_user_box_${i + 1}`
+                                    comment_user_box.classList.add("comment_user_box")
+                                    comment_box.appendChild(comment_user_box)
+
+                                    let comment_user_icon = document.createElement("a")
+                                    comment_user_icon.id = `comment_user_icon_${i + 1}`
+                                    comment_user_icon.classList.add("comment_user_icon")
+                                    comment_user_icon.innerHTML = `<img class="comment_user_icon" src="/media/user_icons/user_icon_mini_${comment_user_id_list[i]}.png" alt="icon">`
+                                    comment_user_box.appendChild(comment_user_icon)
+
+                                    let comment_username = document.createElement("a")
+                                    comment_username.id = `comment_username_${i + 1}`
+                                    comment_username.classList.add("comment_username")
+                                    comment_username.href = `{% url 'home' %}user/${user_id_list[i]}/`
+                                    comment_username.textContent = comment_username_list[i]
+                                    comment_user_box.appendChild(comment_username)
+
+
+                                    let comment_content = document.createElement("div")
+                                    comment_content.id = `comment_content_${i + 1}`
+                                    comment_content.classList.add("comment_content")
+                                    comment_content.innerHTML = set_text_with_newline(comment_content_list[i])
+                                    comment_box.appendChild(comment_content)
+                                }
+                            }
+                        }
+                        else {
+                            let nocomment_text_div = document.createElement("div")
+                            nocomment_text_div.textContent = "まだコメントがありません"
+                            nocomment_text_div.style.width = "10vw"
+                            discussion_box.appendChild(nocomment_text_div)
+                        }
+                    }
+                    else {
+
+                    }
+                })
+        }
+        else {
+            close_comment()
+        }
+    }
+
+    function close_comment() {
+        discussion_box_opened = false
+        document.getElementById("discussion_box").remove()
+        let discussion_box = document.createElement("div")
+        discussion_box.id = "discussion_box"
+        discussion_box.classList.add("discussion_box")
+        discussion_box.style.display = "none"
+        sub_right.appendChild(discussion_box)
+        restore_layout()
+    }
+
+    function open_content(listed_content_number) {
+        let content_box = document.getElementById(`listed_post_content_box_${listed_content_number}`)
+        let button = document.getElementById(`open_content_button_${listed_content_number}`)
+        let already_viewed = document.getElementById(`post_already_viewed${listed_content_number}`)
+        if (content_box.style.display == "none") {
+            content_box.style.display = "inline"
+            button.textContent = "閉じる"
+            if (already_viewed.textContent == "0" && user_id >= 1) {
+                already_viewed.textContent = "1"
+                let post_content = document.getElementById(`listed_post_content_${listed_content_number}`)
+                post_content.innerHTML = "<div class='pale_border'></div>"
+                let content_split = content_list[listed_content_number-1].split(">")
+                let image_count = Math.floor((content_list.length - 1) / 2)
+                for (let i = 0; i < image_count; i++) {
+                    post_content.innerHTML += set_text_with_newline(content_split[2 * i])
+                    post_content.innerHTML += `<img class="icon_mini" src="/media/content_image/${content_id_list[listed_content_number - 1]}/${content_split[2 * i + 1]}" alt="icon">`
+                }
+                post_content.innerHTML += set_text_with_newline(content_split[2 * image_count])
+                post_content.innerHTML += "<div class='pale_border'></div>"
+                let call_by_view_request = new XMLHttpRequest()
+                call_by_view_request.open("POST", "{% url 'home' %}view_count_doubleplus/", true)
+                call_by_view_request.setRequestHeader("Content-Type", "application/json")
+                call_by_view_request.setRequestHeader("X-CSRFToken", csrftoken)
+                request_json_data = {
+                    content_id: document.getElementById(`content_id_of_displayed_post_${listed_content_number}`).textContent,
+                    user_id: "{{user_id}}",
+                    session_id_1: session_id_1,
+                    session_id_2: session_id_2
+                };
+                call_by_view_request.send(JSON.stringify(request_json_data))
+            }
+            if ("{{auto_comment_open}}" == 1) {
+                open_comment(document.getElementById(`content_id_of_displayed_post_${listed_content_number}`).textContent)
+            }
+        } else {
+            content.style.display = "none"
+            button.textContent = "読む"
+        }
+    }
+
+    function add_review(listed_post_number, change____) {
+        let content_id = document.getElementById(`content_id_of_displayed_post_${listed_post_number}`).textContent
+        let data = {
+            change: change____,
+            user_id: "{{user_id}}",
+            content_id: content_id,
+            session_id_1: session_id_1,
+            session_id_2: session_id_2
+        }
+        fetch("{% url 'home' %}review_post/", {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data["result"] == "success") {
+                    let used_like_button = document.getElementById(`like_button_${listed_post_number}`)
+                    if (data["like"] == "added") {
+                        used_like_button.classList.remove("like_button_normal")
+                        used_like_button.classList.add("like_button_liked")
+                    } else if (data["like"] == "removed") {
+                        used_like_button.classList.remove("like_button_liked")
+                        used_like_button.classList.add("like_button_normal")
+                    }
+                    let used_dislike_button = document.getElementById(`dislike_button_${listed_post_number}`)
+                    if (data["dislike"] == "added") {
+                        used_dislike_button.classList.remove("dislike_button_normal")
+                        used_dislike_button.classList.add("dislike_button_disliked")
+                    } else if (data["dislike"] == "removed") {
+                        used_dislike_button.classList.remove("dislike_button_disliked")
+                        used_dislike_button.classList.add("dislike_button_normal")
+                    }
+                }
+                else if (data["result"] == "failed_error") {
+                    alert("エラー\n\nページを読み込み直してもこのメッセージが出る場合は運営に問い合わせてください")
+                }
+            });
+
+    }
+    ///ここからcontent表示
+
+    if (dieplayed_post_number == -1) {
+    }
+    else if (dieplayed_post_number == 0) {
+        let no_content = document.createElement("div")
+        no_content.textContent = "この条件に合う作品はありません"
+        no_content.classList.add("no_content")
+        main_middle.appendChild(no_content)
+    }
+    else if (dieplayed_post_number >= 1) {
+        for (let i = 0; i < dieplayed_post_number; i++) {
+            let post = document.createElement("div")
+            post.id = `listed_post_${i + 1}`
+            post.className = "post_display_box"
+            main_middle.appendChild(post)
+
+            let post_box_left = document.createElement("div")
+            post_box_left.id = `listed_post_box_left${i + 1}`
+            post_box_left.className = "post_box_left"
+            post.appendChild(post_box_left)
+            let post_box_right = document.createElement("div")
+            post_box_right.id = `listed_post_box_right${i + 1}`
+            post_box_right.className = "post_box_right"
+            post.appendChild(post_box_right)
+            let post_content_id = document.createElement("div")
+            post_content_id.id = `content_id_of_displayed_post_${i + 1}`
+            post_content_id.textContent = content_id_list[i]
+            post_content_id.classList.add("hidden")
+            post.appendChild(post_content_id)
+
+            let already_viewed = document.createElement("div")
+            already_viewed.id = `post_already_viewed${i + 1}`
+            already_viewed.textContent = "0"//0で未閲覧
+            already_viewed.classList.add("hidden")
+            post.appendChild(already_viewed)
+
+            let post_title = document.createElement("a")
+            post_title.href = `{% url 'home' %}post/${content_id_list[i]}/`
+            post_title.id = `listed_post_title_${i + 1}`
+            post_title.className = "post_title"
+            post_title.textContent = title_list[i]
+            post_box_left.appendChild(post_title)
+
+            let post_date = document.createElement("div")
+            post_date.id = `listed_post_date${i + 1}`
+            post_date.classList.add("listed_post_date")
+            post_date.textContent = `投稿日 ${post_date_list[i][0]}年${post_date_list[i][1]}月${post_date_list[i][2]}日${post_date_list[i][3]}時${post_date_list[i][4]}分`
+            post_box_left.appendChild(post_date)
+
+
+
+            let post_overview_box = document.createElement("div")
+            post_overview_box.id = `listed_post_overview_box_${i + 1}`
+            post_overview_box.classList.add("post_overview_box")
+            post_box_left.appendChild(post_overview_box)
+            let post_overview = document.createElement("div")
+            post_overview.id = `listed_post_overview_${i + 1}`
+            post_overview.classList.add("post_title_overview")
+            post_overview.innerHTML = set_text_with_newline(overview_list[i])
+            post_overview_box.appendChild(post_overview)
+
+            let post_content_box = document.createElement("div")
+            post_content_box.id = `listed_post_content_box_${i + 1}`
+            post_content_box.className = "post_content_box"
+            post_content_box.style.display = "none"
+            post.appendChild(post_content_box)
+
+            let post_content = document.createElement("div")
+            post_content.id = `listed_post_content_${i + 1}`
+            post_content.classList.add(`listed_post_content`)
+            post_content_box.appendChild(post_content)
+
+            let content_button_box = document.createElement("div")
+            content_button_box.id = `content_button_box${i + 1}`
+            content_button_box.classList.add("content_button_box")
+            post_content_box.appendChild(content_button_box)
+            let like_button_box = document.createElement("div")
+            like_button_box.id = `like_button_box_${i + 1}`
+            like_button_box.classList.add("like_button_box")
+            let like_button = document.createElement("button")
+            like_button.id = `like_button_${i + 1}`
+            if (my_review_list[i] == "liked") {
+                like_button.classList.add("like_button_liked")
+            }
+            else {
+                like_button.classList.add("like_button_normal")
+            }
+            like_button.textContent = "良"
+            like_button.type = "button"
+            like_button.title = "高評価"
+            like_button.addEventListener("click", add_review.bind(null, i + 1, "add_like"))
+            content_button_box.appendChild(like_button_box)
+            like_button_box.appendChild(like_button)
+
+            let dislike_button_box = document.createElement("div")
+            dislike_button_box.id = `dislike_button_box_${i + 1}`
+            dislike_button_box.classList.add("dislike_button_box")
+            let dislike_button = document.createElement("button")
+            dislike_button.id = `dislike_button_${i + 1}`
+            if (my_review_list[i] == "disliked") {
+                dislike_button.classList.add("dislike_button_disliked")
+            }
+            else {
+                dislike_button.classList.add("dislike_button_normal")
+            }
+            dislike_button.textContent = "悪"
+            dislike_button.type = "button"
+            dislike_button.title = "低評価"
+            dislike_button.addEventListener("click", add_review.bind(null, i + 1, "add_dislike"))
+            content_button_box.appendChild(dislike_button_box)
+            dislike_button_box.appendChild(dislike_button)
+
+            let open_comment_button_box = document.createElement("div")
+            open_comment_button_box.id = `open_comment_button_box_${i + 1}`
+            open_comment_button_box.classList.add("open_comment_button_box")
+            let open_comment_button = document.createElement("button")
+            open_comment_button.id = `open_comment_button_${i + 1}`
+            open_comment_button.classList.add("open_comment_button")
+            open_comment_button.textContent = "米"
+            open_comment_button.type = "button"
+            open_comment_button.title = "コメントを開く"
+            open_comment_button.addEventListener("click", open_comment.bind(null, content_id_list[i]))
+            content_button_box.appendChild(open_comment_button_box)
+            open_comment_button_box.appendChild(open_comment_button)
+
+            let open_content_button_box = document.createElement("div")
+            open_content_button_box.classList.add("center")
+            let open_content_button = document.createElement("button")
+            open_content_button.id = `open_content_button_${i + 1}`
+            open_content_button.classList.add("general_button_medium")
+            open_content_button.style.width = "100px"
+            open_content_button.type = "button"
+            open_content_button.textContent = "読む"
+            post.appendChild(open_content_button_box)
+            open_content_button_box.appendChild(open_content_button)
+            open_content_button.addEventListener("click", open_content.bind(null, i + 1))
+
+            if (tags_list[i] != "") {
+                let post_tags_box = document.createElement("div")
+                post_tags_box.id = `listed_post_tags_box_${i + 1}`
+                post_tags_box.classList.add("post_tags_box")
+                post_tags_box.textContent = "タグ"
+                post.appendChild(post_tags_box)
+                let displayed_tag = tags_list[i].split(",")
+                for (let j = 0; j < displayed_tag.length; j++) {
+                    let post_tag_box = document.createElement("div")
+                    post_tag_box.id = `post_tag_box_${i + 1}_${j + 1}`
+                    post_tag_box.classList.add("post_tag_box")
+                    post_tags_box.appendChild(post_tag_box)
+                    let post_tag = document.createElement("a")
+                    post_tag.id = `post_tag_${j + 1}`
+                    post_tag.classList.add("post_tag")
+                    post_tag.textContent = displayed_tag[j]
+                    post_tag_box.appendChild(post_tag)
+                }
+            }
+
+            let icon_name_box = document.createElement("div")
+            icon_name_box.id = `icon_name_box_${i + 1}`
+            icon_name_box.classList.add("icon_name_box")
+            post_box_right.appendChild(icon_name_box)
+            listed_post_icon = document.createElement("a")
+            listed_post_icon.id = `listed_post_icon_${i + 1}`
+            listed_post_icon.classList.add("listed_post_icon")
+            listed_post_icon.href = `{% url 'home' %}user/${user_id_list[i]}/`
+            listed_post_icon.innerHTML = `<img class="icon_mini" src="/media/user_icons/user_icon_mini_${user_id_list[i]}.png" alt="icon">`
+            icon_name_box.appendChild(listed_post_icon)
+
+            listed_post_username = document.createElement("a")
+            listed_post_username.id = `listed_post_username_${i + 1}`
+            listed_post_username.classList.add("listed_post_username")
+            listed_post_username.href = `{% url 'home' %}user/${user_id_list[i]}/`
+            listed_post_username.textContent = `${user_name_list[i]}`
+            icon_name_box.appendChild(listed_post_username)
+        }
+    }
+
+    function set_height_discussion_box() {
+        let discussion_box = document.getElementById("discussion_box")
+        var onevh = document.documentElement.clientHeight / 100
+        if (window.scrollY > 7 * onevh) { // 7vh以上スクロールした場合
+            discussion_box.style.height = '100vh'
+            discussion_box.style.top = "0vh"
+        }
+        else {
+            discussion_box.style.height = `${93 + (window.scrollY / onevh)}vh`
+            discussion_box.style.top = `${7 - (window.scrollY / onevh)}vh`
+        }
+    }
+
+    window.addEventListener('scroll', function () {
+        set_height_discussion_box()
+    });
+
+</script>
+{% endblock %}

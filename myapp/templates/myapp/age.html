@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <form>{% csrf_token %}</form>
+    <title>カチッ|連絡フォーム</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #f06, #bada55);
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .contact-form {
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+        box-sizing: border-box;
+      }
+      .contact-form h2 {
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+      }
+      .contact-form .input-group {
+        margin-bottom: 15px;
+      }
+      .contact-form .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      .contact-form .input-group input,
+      .contact-form .input-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+      .contact-form .input-group textarea {
+        resize: none;
+        height: 100px;
+      }
+      .contact-form .submit-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background: #007bff;
+        border: none;
+        border-radius: 5px;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .contact-form .submit-btn:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="contact-form">
+        <h2>開発者に連絡</h2>
+      <div class="input-group">
+        <label for="name">名前</label>
+        <input type="text" id="name" name="name" required />
+      </div>
+      <div class="input-group">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+      <div class="input-group">
+        <label for="message">内容</label>
+        <textarea
+          id="report_comment_textarea"
+          name="message"
+          required
+        ></textarea>
+      </div>
+      <button id="all_star_dust" class="submit-btn">送信</button>
+    </div>
+    <script>
+      //競合回避のため全ての変数はvarを付ける
+      // 毎フレーム実行される関数
+
+      const session_id_key_1 = "session_id_1";
+      const session_id_key_2 = "session_id_2";
+      /// 正規表現でcookie値を取得
+      const session_id_1 = document.cookie.match(
+        new RegExp(session_id_key_1 + "\=([^\;]*)\;*")
+      )[1];
+      const session_id_2 = document.cookie.match(
+        new RegExp(session_id_key_2 + "\=([^\;]*)\;*")
+      )[1];
+      const subject_category = "contact";
+      const subject_id = 0;
+      const csrftoken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+      ).value;
+      function submit_report() {
+        let ma = document.getElementById("email").value;
+        if (ma == "") {
+          alert("メールアドレスを入力してください");
+          return null;
+        }
+        let report_category = "contact";
+        let report_comment =
+          "メールアドレスは" +
+          ma +
+          "名前は" +
+          document.getElementById("name").value +
+          "内容は" +
+          document.getElementById("report_comment_textarea").value;
+        let request_json_data = {
+          session_id_1: session_id_1,
+          session_id_2: session_id_2,
+          report_category: report_category,
+          report_comment: report_comment,
+          subject_category: subject_category,
+          subject_id: String(subject_id),
+        };
+        fetch("{% url 'home' %}report_process/", {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json", //JSON形式のデータのヘッダー
+            "X-CSRFToken": csrftoken,
+          },
+          body: JSON.stringify(request_json_data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data["result"] == "success") {
+              alert("通報を送信しました");
+              history.back();
+            } else {
+              alert("エラー");
+            }
+          });
+      }
+      document
+        .getElementById("all_star_dust")
+        .addEventListener("click", () => {
+          submit_report();
+        });
+      
+    </script>
+  </body>
+</html>

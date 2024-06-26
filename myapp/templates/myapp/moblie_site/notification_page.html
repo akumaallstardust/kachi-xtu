@@ -1,0 +1,56 @@
+{% extends 'myapp/moblie_site/base.html' %}
+
+{% block content %}
+<div class="notification_page_box" id="notification_page_box">
+    <div class="notification_page_text">通知</div>
+</div>
+{% endblock %}
+{% block script %}
+<script>
+    const notification_page_box = document.getElementById("notification_page_box")
+    const notification_list = JSON.parse(`{{notifications_json}}`)
+    notification_list.reverse()
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    class notification_element {
+        constructor(notification, index) {
+            this.href = ""
+            if (notification["notification_id"].slice(0, "new_comment".length) == "new_comment") {
+                this.href = "{% url 'home' %}post/option/" + `?option_category=latest_parent_comment&subject_id=${notification["notification_id"].slice("new_comment_".length)}`
+            }
+            else if(notification["notification_id"].slice(0, "new_child_comment".length) == "new_child_comment"){
+                this.href = "{% url 'home' %}post/option/" + `?option_category=latest_child_comment&subject_id=${notification["notification_id"].slice("new_child_comment_".length)}`
+            }
+            this.box = document.createElement("button");
+            this.box.type = "button"
+            this.box.title = "asd"
+            this.box.id = `notification_box_${index + 1}`
+            this.box.classList.add(notification["notification_read_flag"] == "n" ? "notification_box_unread" : "notification_box_read")
+            this.box.addEventListener("click", () => {
+
+                location.href = this.href
+            })
+            notification_page_box.appendChild(this.box)
+            this.icon_box=document.createElement("div")
+            this.icon_box.classList.add("notification_icon_box")
+            this.box.appendChild(this.icon_box)
+            this.icon_image=document.createElement("img")
+            this.icon_image.classList.add("notification_icon_image")
+            this.icon_image.src="/media/notification_icon.png"
+            this.icon_box.appendChild(this.icon_image)
+            this.content = document.createElement("div")
+            this.content.id = `notification_content_${index + 1}`
+            this.content.classList.add("notification_text")
+            this.content.textContent = notification["notification_content"]
+            this.box.appendChild(this.content)
+        }
+        delete() {
+        }
+    }
+    if (notification_list.length >= 1) {
+        let notification_element_list = []
+        for (let i = 0; i < notification_list.length; i++) {
+            notification_element_list[i] = new notification_element(notification_list[i], i)
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+
+<body>
+    <div class="mailaddress_input_box">
+        <h4>メールアドレスを入力してください</h4>
+        <input id="mailaddress_input" type="email" name="mailaddress" form="send" maxlength="255" size="40" />
+    </div>
+    <div class="password_input_box">
+        <h4>パスワードを入力してください</h4>
+        <input id="password_input" type="password" name="password" form="send" maxlength="255" size="40" />
+    </div><br>
+    <div class="login_form_box">
+        <form name="login_form" id="send" action="{% url 'home' %}login_process/" method="POST">{% csrf_token %}
+            <div class="center">
+                <button style="width: 360px;" class="general_button_large" type="button"
+                    onclick="confirmation_information()">ログイン</button>
+            </div>
+        </form>
+
+    </div>
+</body>
+{% endblock %}
+{% block script %}
+<script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    const mailaddress_patteen = /^[a-zA-Z0-9_+-]+(.[a-zA-Z0-9_+-]+)*@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}/
+    const password_patteen = /^(([a-xA-Z0-9]|\_|\?|\!|\#|\@|\$)+)$/
+    document.getElementById("password_input").addEventListener("input", () => {
+        if (password_patteen.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value!="") {
+            alert("パスワードに使用可能な文字は英数字と_?!#`$のみです")
+            document.getElementById("password_input").value = ""
+        }
+    })
+
+    function confirmation_information() {
+        let password = document.getElementById("password_input").value
+        let mailaddress = document.getElementById("mailaddress_input").value
+        if (mailaddress_patteen.test(mailaddress) == false) { alert("メールアドレスが不正です") }//文字数チェックも含む
+        else if (password_patteen.test(password) == false) { alert("パスワードが不正です") }
+        else {
+            request_json_data = {
+                password: password,
+                mailaddress: mailaddress,
+            }
+            fetch("{% url 'home' %}login_process/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["result"] == "success") {
+                        document.cookie = `session_id_1=${data["session_id_1"]}; path=/`
+                            document.cookie = `session_id_2=${data["session_id_2"]}; path=/`
+                        location.href = ("{% url 'home' %}")
+                    }
+                    else if(data["result"] == "incorrect_password"){
+                        alert("パスワードが間違っています")
+                    }
+                    else if(data["result"] == "incorrect_mailaddress"){
+                        alert("メールアドレスが間違っています")
+                    }
+                    else if(data["result"] == "failed_error"){
+                        alert("エラー")
+                    }
+                })
+        }
+    }
+</script>
+{% endblock %}

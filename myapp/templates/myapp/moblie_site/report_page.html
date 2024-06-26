@@ -1,0 +1,84 @@
+{% extends 'myapp/moblie_site/base.html' %}
+
+{% block content %}
+<div class="general_vertical_line" style="margin-left: 3vw; margin-top: 3vw;"></div>
+<h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 1vw;margin-top: 3vw;">通報項目</h2>
+<div class="report_category_select_box">
+    <select title="通報項目の選択" name="report_category" id="report_category_select" form="datailed_search"
+        class="report_category_select">
+        <option value="malicious_misinformation">悪意がある事実と異なる情報</option>
+        <option value="extremely_violent_content">極度に暴力的なコンテンツ</option>
+        <option value="extremely_sexual_content">極度に性的なコンテンツ</option>
+        <option value="behavior_soliciting_personal_information">個人情報を求める行動</option>
+        <option value="behavior_soliciting_real-life_encounters">現実での出会いを求める行動</option>
+        <option value="other_violations_of_terms">その他規約違反</option>
+        <option value="other_legal_violations">その他法律違反</option>
+        <option value="other_ethically_problematic_behaviors">その他倫理的に問題がある行動</option>
+        <option value="behaviors_that_do_not_fit_the_above_items_but_are_problematic">以上の項目に当てはまらないが問題がある行動</option>
+    </select>
+</div>
+<br>
+<div id="report_comment_input_box" style="margin-top: 10vw;" class="overview_input_box">
+    <div id="report_comment_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true">
+    </div>
+    <textarea id="report_comment_textarea" class="overview_textarea" style="border: 1px solid #e0e0e0;" placeholder="備考を入力する(通報項目によっては必須)" type="text"
+        name="report_comment" form="post" maxlength="10000" title="備考入力"></textarea>
+</div>
+
+<button style="width: 40vw;margin-top: 3vh;" class="general_button_large" type="button"
+    onclick="submit_report()">通報</button>
+</div>
+<script>
+        // 毎フレーム実行される関数
+        
+
+    const session_id_key_1 = 'session_id_1';
+    const session_id_key_2 = 'session_id_2';
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1];
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1];
+    const subject_category = "{{subject_category}}"
+    console.log(subject_category)
+    const subject_id = Number("{{subject_id}}")
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    document.getElementById("report_comment_textarea").addEventListener("input", () => {
+        document.getElementById("report_comment_textarea_dummy").style.opacity = "0"
+        document.getElementById("report_comment_textarea_dummy").textContent = document.getElementById("report_comment_textarea").value + "\u200b"
+    })
+    function submit_report() {
+        let report_category = document.getElementById("report_category_select").value
+        let report_comment = document.getElementById("report_comment_textarea").value
+        if (report_comment.length == 0 && (report_category == "other_violations_of_terms"
+            || report_category == "other_legal_violations" || report_category == "other_ethically_problematic_behaviors"
+            || report_category == "behaviors_that_do_not_fit_the_above_items_but_are_problematic")) { alert("選択されている通報項目では備考が必須です") }
+        else {
+            let request_json_data = {
+                session_id_1: session_id_1,
+                session_id_2: session_id_2,
+                report_category: report_category,
+                report_comment: report_comment,
+                subject_category: subject_category,
+                subject_id: String(subject_id)
+            }
+            fetch("{% url 'home' %}report_process/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["result"] == "success") {
+                        alert("通報を送信しました")
+                        history.back()
+                    }
+                    else {
+                        alert("エラー")
+                    }
+                })
+        }
+    }
+</script>
+{% endblock %}
