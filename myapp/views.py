@@ -829,6 +829,7 @@ def signup_common(request: HttpRequest,from_app_flag=False):  # ユーザー登�
         response_data["user_id"]=str(user_id)
         response_data["session_id_1"]=str(new_session.value_1)
         response_data["session_id_2"]=str(new_session.value_2)
+        print("登録:user_id="+str(user_id))
     else:
         response_data["result"]="failed_error"
     cursor.close()
@@ -943,6 +944,7 @@ def login_common(request: HttpRequest,from_app_flag=False):
                 response_data["user_id"]=str(new_session.user_id)
                 response_data["session_id_1"]=str(new_session.value_1)
                 response_data["session_id_2"]=str(new_session.value_2)
+                print("ログイン:user_id="+str(new_session.user_id))
             else:
                 response_data["result"]="incorrect_password"
         else:
@@ -966,6 +968,7 @@ def logout_common(request: HttpRequest,from_app_flag=False):
         response_data["result"]="request_broken_error"
         return JsonResponse(response_data)
     cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
+    print("ログアウト:user_id="+str(cono.session.user_id))
     cono.session.logout(cursor=cono.cursor)
     return JsonResponse(response_data)
 def logout_process(request: HttpRequest):
@@ -1202,6 +1205,7 @@ def post_common(request: HttpRequest,from_app_flag=False):
                     my_functions.my_log("aasssddddd")
                 my_functions.delete_file_if_exists(image_name)
                 image_list[i].save(image_name)
+        print("投稿:user_id="+str(cono.session.user_id)+"content_id="+str(content_id))
     else:
         response_data["result"]="incorrect_session"
         my_functions.error_log("09218293",from_app_flag)
@@ -1250,6 +1254,7 @@ def delete_post_common(request:HttpRequest,from_app_flag=False):
         cono.cnx.commit()
         my_search.delete_post_from_index(content_id=content_id)#インデックスは視覚的に操作出来ないのでDBの操作が成功してから
         response_data["result"]="success"
+        print("投稿削除:user_id="+str(cono.session.user_id)+"content_id="+str(content_id))
     else:
         response_data["result"]="incrrect_session_error"
         my_functions.error_log("32423424232")
@@ -1815,6 +1820,7 @@ def add_comment_common(request:HttpRequest,from_app_flag):
     else:
         if(parent_comment_user_id!=cono.session.user_id):
             my_functions.add_notification_data(subject_category="new_child_comment",subject_id=int(parent_comment_id_str),cursor=cono.cursor,user_id=parent_comment_user_id)
+    print("コメント投稿:user_id="+str(cono.session.user_id)+"comment_id="+str(comment_id))
     cono.cnx.commit()
     cono.terminate_connection()
     return JsonResponse(response_data)
@@ -1864,6 +1870,7 @@ def delete_comment_common(request:HttpRequest,from_app_flag=False):
         cono.cursor.execute(query)
         cono.cnx.commit()
         response_data["result"]="success"
+        print("コメント削除:user_id="+str(cono.session.user_id)+"comment_id="+str(comment_id))
     else:
         response_data["result"]="incrrect_session_error"
         my_functions.error_log("32423424213232",from_app_flag)
@@ -1940,6 +1947,7 @@ def change_user_info_common(request:HttpRequest,from_app_flag=False):
         cono.cnx.commit()
         cono.terminate_connection()
         response_data={"result":"success"}
+        print("情報変更:user_id="+str(cono.session.user_id))
         return JsonResponse(response_data)
     else:
         cono.terminate_connection()
@@ -2059,6 +2067,7 @@ def change_password_common(request:HttpRequest,from_app_flag=False):
         cono.cursor.execute(query,data)
         cono.cnx.commit()
         response_data={"result":"success"}
+        print("コメント投稿:user_id="+str(cono.session.user_id))
     else:
         response_data={"result":"failed_password"}
     cono.terminate_connection()
@@ -2366,14 +2375,17 @@ def report_common(request:HttpRequest,from_app_flag=False):
     result=cono.cursor.fetchone()
     if(result is None):
         report_id=1
+        query="INSERT INTO report_table (report_id,report_user_id,report_category,report_comment) VALUES(%s,%s,%s,%s) ;"
+        data=(str(report_id),str(user_id),report_category,subject_category+":id="+subject_id+"\n"+report_comment)
     else:
         report_id=result[0]+1
-    query="INSERT INTO report_table (report_id,report_user_id,report_category,report_comment) VALUES(%s,%s,%s,%s) ;"
-    data=(str(report_id),str(user_id),report_category,subject_category+":id="+subject_id+"\n"+report_comment)
+        query="INSERT INTO report_table (report_user_id,report_category,report_comment) VALUES(%s,%s,%s) ;"
+        data=(str(user_id),report_category,subject_category+":id="+subject_id+"\n"+report_comment)
     cono.cursor.execute(query,data)
     cono.cnx.commit()
     cono.terminate_connection()
     response_data={"result":"success"}
+    print("レポート:user_id="+str(cono.session.user_id)+"report_id="+str(report_id))
     return JsonResponse(response_data)
 def report_process(request:HttpRequest):
     return report_common(request=request,from_app_flag=False)
@@ -2416,6 +2428,7 @@ def delete_user_common(request:HttpRequest,from_app_flag=False):
             cono.cursor.execute(query)
             cono.cnx.commit()
             response_data["result"]="success"
+            print("ユーザー削除:user_id="+str(cono.session.user_id))
         else:
             response_data["result"]="incorrect_password"
     else:

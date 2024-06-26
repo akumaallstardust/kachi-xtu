@@ -152,7 +152,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT =PROJECT_DIR+"/myapp/static"
+STATIC_ROOT =os.path.join(PROJECT_DIR, "myapp","static")
 TIMEOUT = 100
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
