@@ -316,6 +316,7 @@ def test(request:HttpRequest):
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
 
+
 def cccontact(request:HttpRequest):
     cono = connection_to_user_db(request=request)
     html_file="myapp/age.html"
