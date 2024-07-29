@@ -69,11 +69,10 @@ def create_content_dict(
         if("" in content_id_list):
             content_id_list=[]
             amount_of_displayed_post=0
-        print(content_id_list)
         for i in range(amount_of_displayed_post):#newとは逆
             ordered_content_id.append(int(content_id_list[i+(start_number-1)]))
             
-    elif(order==order_option_list[11]):#order_option_list[10]="no_sort_str"
+    elif(order==order_option_list[11]):#order_option_list[11]="no_sort"
         if("" in content_id_list):
             content_id_list=[]
             amount_of_displayed_post=0
@@ -164,47 +163,19 @@ def create_content_dict(
     else:#エラー
         error_log(text="error0001")
         return {"amount_of_displayed_post":"-1"}
-    contents=[]
+
+
     if(user_id>=1):
         query="select like_history,dislike_history from user_review_history where user_id={};".format(user_id)
         cursor.execute(query)
         result=cursor.fetchone()
         if result is not None:
-            liked_list=result[0].split(",")#文字列のリストなので注意
+            liked_list=[] if result[0]=="" else result[0].split(",")#文字列のリストなので注意
             disliked_list=result[1].split(",")#文字列のリストなので注意
     else:
         liked_list=[]
         disliked_list=[]
 
-    for i in ordered_content_id:
-        query="select content_id,title,content,user_id,overview,word_count,tags,post_date from post_data_table where content_id={}".format(i)
-        cursor.execute(query)
-        result=cursor.fetchone()
-        if(result is not None):
-            displayd_content_data=list(result)#型はlist
-            if(user_id>=1):#liked_listは初期化済みなので無くても大丈夫だが一応
-                if(str(displayd_content_data[0]) in liked_list):
-                    displayd_content_data.append("liked")
-                elif(str(displayd_content_data[0]) in disliked_list):
-                    displayd_content_data.append("disliked")
-                else:
-                    displayd_content_data.append("none")
-            else:
-                displayd_content_data.append("none")
-            query="select like_count,dislike_count from post_review_table where content_id={};".format(i)
-            cursor.execute(query)
-            result=cursor.fetchone()
-            displayd_content_data.append(int(result[0]))
-            displayd_content_data.append(int(result[1]))
-            contents.append(displayd_content_data)
-            query="select username from user_data_table where user_id={};".format(displayd_content_data[3])
-            cursor.execute(query)
-            result=cursor.fetchone()
-            displayd_content_data.append(result[0])
-        else:
-            amount_of_displayed_post-=1
-            
-    content_dict={"amount_of_displayed_post":str(amount_of_displayed_post),"page_number":str(page_number),"total_page_number":str(total_page_number)}# 表示する数
     content_id_combined = ""
     title_combined = ""
     content_combined = ""
@@ -217,19 +188,48 @@ def create_content_dict(
     like_counts_combined=""
     dislike_counts_combined=""
     user_name_combined=""
-    for i in contents:  # 全て<で区切る<>使用禁止
-        content_id_combined += (str(i[0]) + "<")  # results[i][0]はintなためstr()を使う
-        title_combined += i[1] + "<"
-        content_combined += i[2] + "<"
-        user_id_combined += str(i[3]) + "<"  # content_idと同じく
-        overview_combined += i[4] + "<"
-        word_counts_combined += str(i[5]) + "<"
-        tags_combined+=i[6] + "<"
-        post_date_combined+=i[7].strftime("%Y,%m,%d,%H,%M,%S")+"<"
-        my_review_combined+=i[8] + "<"
-        like_counts_combined+=str(i[9]) + "<"
-        dislike_counts_combined+=str(i[10]) + "<"
-        user_name_combined+=str(i[11])+"<"
+    comment_count_combined=""
+
+    for i in ordered_content_id:
+        query="select content_id,title,content,user_id,overview,word_count,tags,post_date,comment_ids from post_data_table where content_id={}".format(i)
+        cursor.execute(query)
+        content_basic_datas=cursor.fetchone()
+        if(content_basic_datas is not None):
+            content_id_combined += str(content_basic_datas[0]) + "<"  # content_basic_datas[0]はintなためstr()を使う
+            title_combined += content_basic_datas[1] + "<"
+            content_combined += content_basic_datas[2] + "<"
+            user_id_combined += str(content_basic_datas[3]) + "<"  # content_idと同じく
+            overview_combined += content_basic_datas[4] + "<"
+            word_counts_combined += str(content_basic_datas[5]) + "<"
+            tags_combined+=content_basic_datas[6] + "<"
+            post_date_combined+=content_basic_datas[7].strftime("%Y,%m,%d,%H,%M,%S")+"<"
+            comment_count_combined+=str(0 if content_basic_datas[8]=="" else content_basic_datas[8].count(',')+1)+"<"
+            
+            my_review:str="none"
+            if(user_id>=1):#liked_listは初期化済みなので無くても大丈夫だが一応
+                if(str(content_basic_datas[0]) in liked_list):
+                    my_review="liked"
+                    print(liked_list)
+                elif(str(content_basic_datas[0]) in disliked_list):
+                    my_review="disliked"
+            
+            my_review_combined+=my_review + "<"
+
+            query="select like_count,dislike_count from post_review_table where content_id={};".format(i)
+            cursor.execute(query)
+            result=cursor.fetchone()
+            like_counts_combined+=str(result[0]) + "<"
+            dislike_counts_combined+=str(result[1]) + "<"
+            
+            query="select username from user_data_table where user_id={};".format(content_basic_datas[3])
+            cursor.execute(query)
+            result=cursor.fetchone()
+            user_name_combined+=result[0]+"<"
+            
+        else:
+            amount_of_displayed_post-=1#これがあればクライアント側ではエラーと表示される
+            
+    content_dict={"amount_of_displayed_post":str(amount_of_displayed_post),"page_number":str(page_number),"total_page_number":str(total_page_number)}# 表示する数
     content_dict["content_id_combined"] = mark_safe(content_id_combined[:-1])#最後の<は消す
     content_dict["title_combined"] = mark_safe(title_combined[:-1])
     content_dict["content_combined"] = mark_safe(content_combined[:-1])
@@ -242,6 +242,7 @@ def create_content_dict(
     content_dict["like_counts_combined"] =mark_safe(like_counts_combined[:-1])
     content_dict["dislike_counts_combined"] =mark_safe(dislike_counts_combined[:-1])
     content_dict["user_name_combined"] =mark_safe(user_name_combined[:-1])
+    content_dict["comment_count_combined"] =mark_safe(comment_count_combined[:-1])
     
     return content_dict
 
@@ -251,7 +252,7 @@ def escape_backticks(data):
     elif isinstance(data, list):
         return [escape_backticks(element) for element in data]
     elif isinstance(data, str):
-        return data.replace('`', r'\`')
+        return mark_safe(data.replace('`', r'\`'))
     else:
         return data
 
@@ -547,6 +548,19 @@ def check_str_is_int(text_number:str,allow_long=False)->bool:
     else:
         return False
 
+def check_correct_search_subjects(subjects:list)->bool:
+    if(type(subjects)==type("str")):
+        return False
+    
+    correct_sugject_flag=True
+    
+    for i in subjects:
+        if(i in ["title","tags","content","overview"]):
+            pass
+        else:
+            correct_sugject_flag=False
+    return correct_sugject_flag
+
 def judge_moblie(request:HttpRequest):
     if("HTTP_USER_AGENT" in request.META):
     # 括弧とセミコロンの間の文字列を抽出する正規表現パターン
@@ -554,9 +568,9 @@ def judge_moblie(request:HttpRequest):
     # 検索して結果を返す
         match = re.search(pattern, request.META["HTTP_USER_AGENT"])
         if match:
-            if(match.group(1)[0:7]=="Android" or match.group(1)[0:6]=="iPhone"):
-                return True
-    return True#return False
+            if(match.group(1)[0:len("Android")]=="Android" or match.group(1)[0:len("iPhone")]=="iPhone" or match.group(1)[0:len("iPad")]=="iPad"):
+                return True    
+    return True#False
 
 def is_valid_image(image_binary:bytes):
     try:
@@ -613,7 +627,6 @@ def create_image_with_char(char,  image_size=200):
     text_bbox = draw.textbbox((0, 0), char, font=font)
     text_width = text_bbox[2] - text_bbox[0]
     text_height = text_bbox[3] - text_bbox[1]
-    print([text_width,text_height])
     # Calculate the position at which the text will be drawn
     position = ((image_size-text_width) / 2, 0)
     
@@ -646,20 +659,21 @@ def reset_index():
     delete_file_if_exists(my_search.index_dir)
     if(os.path.exists(my_search.index_dir)):
         shutil.rmtree(my_search.index_dir)
-    query="select content_id,title,content,user_id,overview,tags,post_date from post_data_table ORDER BY content_id ASC;"
+    query="select content_id,title,content,user_id,overview,tags,post_date,deleted_flag from post_data_table ORDER BY content_id ASC;"
     cursor.execute(query)
     results=cursor.fetchall()
     for i in results:
-        content_split=i[2].split(">")
-        if(len(content_split)>=3):#2n-1になる
-            index_content=""
-            for j in range(int((len(content_split)-1)/2)):
-                index_content+=content_split[2*j]
-            index_content+=content_split[len(content_split)-1]
-        else:
-            index_content=i[2]
-        my_search.add_post_to_index(post=[i[0],i[1],index_content,i[3],i[4],i[5].split(","),i[6]])#タグはリストで渡す
-    query="select user_id,username from user_data_table ORDER BY user_id ASC"
+        if(i[7]=="n"):
+            content_split=i[2].split(">")
+            if(len(content_split)>=3):#2n-1になる
+                index_content=""
+                for j in range(int((len(content_split)-1)/2)):
+                    index_content+=content_split[2*j]
+                index_content+=content_split[len(content_split)-1]
+            else:
+                index_content=i[2]
+            my_search.add_post_to_index(post=[i[0],i[1],index_content,i[3],i[4],i[5].split(","),i[6]])#タグはリストで渡す
+    query="select user_id,username from user_data_table where deleted_flag='n' ORDER BY user_id ASC"
     cursor.execute(query)
     results=cursor.fetchall()
     for i in results:

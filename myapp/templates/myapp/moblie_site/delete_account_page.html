@@ -19,11 +19,8 @@
 {% endblock %}
 {% block script %}
 <script>
-    const username_exclusion_pattern = />|<| |　|★|☆|\u200b|&lt;|,|\n|\r|\t/g
-    const content_exclusion_pattern = /<|>|\u200b|\t/g
     const session_id_1 = document.cookie.match(new RegExp('session_id_1' + '\=([^\;]*)\;*'))[1];
     const session_id_2 = document.cookie.match(new RegExp('session_id_2' + '\=([^\;]*)\;*'))[1];
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
 
     const password_patteen = /^(([a-xA-Z0-9]|\_|\?|\!|\#|\@|\$)+)$/
     var upload_processing_flag = false

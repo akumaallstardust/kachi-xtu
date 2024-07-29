@@ -1,78 +1,101 @@
 {% extends 'myapp/moblie_site/base.html' %}
+{% block title %}
+投稿
+{% endblock %}
 {% block head %}
-<title>投稿</title>
+<script>
+    var posted_flag = false
+    window.addEventListener('beforeunload', function (e) {
+        if (posted_flag == false) {
+            var confirmationMessage = 'ページを離れたら内容が消えてしまいます、よろしいですか?';
+            e.returnValue = confirmationMessage; // 古いブラウザ向けの互換性のために設定
+            return confirmationMessage;          // ほとんどのブラウザで動作
+        }
+
+    });
+</script>
 {% endblock %}
 {% block content %}
-<div id="gray_out_post_page" class="gray_out_post_page">
-    <div id="post_input_box" class="post_input_box">
-        <div class="general_vertical_line" style="margin-left: 3vw;"></div>
-        <h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 1vw;">タイトル</h2>
-        <div class="title_input_box">
-            <input class="title_input" id="title_input" type="text" name="title" form="post" maxlength="50"
-                title="タイトル入力" placeholder="タイトルを入力" />
-        </div><br>
-        <div class="general_vertical_line" style="margin-left: 3vw;"></div>
-        <h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 1vw;">内容</h2>
-        <div id="content_textarea_box" class="content_textarea_box">
+<div id="post_input_box" class="post_input_box">
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">タイトル</h2>
+    </div>
+    <div class="title_input_box">
+        <input class="title_input" id="title_input" type="text" name="title" form="post" maxlength="50" title="タイトル入力"
+            placeholder="タイトルを入力" />
+    </div>
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">本文</h2>
+    </div>
+    <div class="content_textarea_box">
+        <div id="content_textarea_box">
             <div id="content_textarea_set_1" class="content_textarea_set">
-                <div class="content_textarea_dummy" style="min-height: 15vw;" id="content_textarea_dummy_1"
+                <div class="content_textarea_dummy" style="min-height:120px;" id="content_textarea_dummy_1"
                     aria-hidden="true">仮テキスト</div>
                 <textarea id="content_textarea_1" class="content_textarea" type="text" name="content" form="post"
-                    maxlength="20000" title="内容入力" placeholder="内容を入力する"></textarea>
-            </div>
-            <div class="content_image_input_box" id="content_image_input_box">
-                <label for="image_input" class="content_image_input_label">
-                    <svg role="img" xmlns="http://www.w3.org/2000/svg" width="8vw" height="8vw" viewBox="0 0 24 24"
-                        aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
-                        stroke-linejoin="miter" fill="none" color="#5a9fa6">
-                        <title id="imageIconTitle">画像を挿入</title>
-                        <rect width="18" height="18" x="3" y="3" />
-                        <path stroke-linecap="round" d="M3 14l4-4 11 11" />
-                        <circle cx="13.5" cy="7.5" r="2.5" />
-                        <path stroke-linecap="round" d="M13.5 16.5L21 9" />
-                    </svg>
-                </label>
-                <input id="image_input" type="file" style="display: none;">
+                    maxlength="20000" title="本文入力" placeholder="本文を入力する"></textarea>
             </div>
         </div>
-        <div class="rest_char_count" id="rest_char_count">残り2000文字</div>
-        <br>
-        <div class="general_vertical_line" style="margin-left: 3vw;"></div>
-        <h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 1vw;">概要</h2>
-        <div id="overview_input_box" class="overview_input_box">
-            <div id="overview_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true"></div>
-            <textarea id="overview_textarea" class="overview_textarea" type="text" name="overview" form="post"
-                maxlength="100" title="概要入力" placeholder="概要を入力する(省略可能)"></textarea>
-        </div>
-        <br>
-        <div class="general_vertical_line" style="margin-left: 3vw;"></div>
-        <h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 1vw;">タグ</h2>
-        <div class="tags_box" id="tags_box">
-            <button class="add_tag_button" id="add_tag_button" type="button" onclick="add_tag()">
-                <svg role="img" xmlns="http://www.w3.org/2000/svg" width="8vw" height="8vw" viewBox="0 0 24 24"
+        <div class="content_image_input_box" id="content_image_input_box">
+            <label for="image_input">
+                <svg role="img" xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24"
                     aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
                     stroke-linejoin="miter" fill="none" color="#5a9fa6">
-                    <title id="plusIconTitle">タグを追加</title>
-                    <path d="M20 12L4 12M12 4L12 20" />
+                    <title id="imageIconTitle">画像を挿入</title>
+                    <rect width="18" height="18" x="3" y="3" />
+                    <path stroke-linecap="round" d="M3 14l4-4 11 11" />
+                    <circle cx="13.5" cy="7.5" r="2.5" />
+                    <path stroke-linecap="round" d="M13.5 16.5L21 9" />
                 </svg>
-            </button>
-            <div class="tag_input_box">
-                <input class="tag_input" id="tag_input_1" type="text" form="post" maxlength="20"
-                    placeholder="タグを入力(省略可能)" />
-            </div>
-            <input type="hidden" id="joined_tags" name="joined_tags" value="" form="post" aria-hidden="true">
+            </label>
+            <input id="image_input" type="file" style="display: none;">
         </div>
-        <div class="post_button_box">
-            <button class="post_button" id="post_button" type="button" onclick="check_and_post()">投稿</button>
-            <form name="post_form" id="post" action="{% url 'home' %}post/process/" method="POST">{%csrf_token %}
-            </form>
+    </div>
+    <div class="rest_char_count" id="rest_char_count">残り2000文字</div>
+
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">概要</h2>
+    </div>
+    <div id="overview_input_box" class="overview_input_box">
+        <div id="overview_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true"></div>
+        <textarea id="overview_textarea" class="overview_textarea" type="text" name="overview" form="post"
+            maxlength="100" title="概要入力" placeholder="概要を入力する(省略可能)"></textarea>
+    </div>
+
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">タグ</h2>
+    </div>
+    <div class="tags_box" id="tags_box">
+        <button class="add_tag_button" id="add_tag_button" type="button" onclick="add_tag()">
+            <svg role="img" xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6" style="position: relative;margin-top: -4px;display: block;
+            ">
+                <title id="plusIconTitle">画像を入力</title>
+                <path d="M20 12L4 12M12 4L12 20" />
+            </svg>
+        </button>
+        <div class="tag_input_box">
+            <input class="tag_input" id="tag_input_1" type="text" form="post" maxlength="20"
+                placeholder="タグを入力(省略可能)" />
         </div>
+        <input type="hidden" id="joined_tags" name="joined_tags" value="" form="post" aria-hidden="true">
+    </div>
+    <div class="post_button_box">
+        <button class="post_button" id="post_button" type="button" onclick="check_and_post()">投稿</button>
+        <form name="post_form" id="post" action="{% url 'home' %}post/process/" method="POST">{%csrf_token %}
+        </form>
     </div>
 </div>
 {% endblock %}
 {% block out_of_box %}
 
 <script>
+    const main_middle = document.getElementById("main_middle")
     const delimiter = "\u200b"
     const user_id = Number("{{user_id}}")
     const session_id_key_1 = 'session_id_1';
@@ -83,15 +106,9 @@
 
     var onevw = document.documentElement.clientWidth / 100
     var onevh = document.documentElement.clientHeight / 100
-    let javascript死ね = document.getElementById("gray_out_post_page").offsetHeight
-    if (javascript死ね < document.documentElement.clientHeight * 0.8) {
-        javascript死ね = document.documentElement.clientHeight * 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
-    }
-    const defalt_gray_out_box_hight = javascript死ね
+    const defalt_gray_out_box_hight = document.getElementById("post_input_box").offsetHeight
     const defalt_post_input_box_height = document.getElementById("post_input_box").offsetHeight
     const defalt_total_input_height = document.getElementById("content_textarea_box").offsetHeight + document.getElementById("overview_input_box").offsetHeight + document.getElementById("tags_box").offsetHeight
-
-
 
     if (user_id <= 0) {
         location.href = ("{% url 'home' %}signup/")
@@ -115,16 +132,6 @@
         return matches ? matches.length : 0
     }
 
-    function relocation_post_box() {
-        return 0
-        let now_total_input_height = document.getElementById("content_textarea_box").offsetHeight + document.getElementById("overview_input_box").offsetHeight + document.getElementById("tags_box").offsetHeight
-        if ((defalt_gray_out_box_hight + now_total_input_height - defalt_total_input_height) / onevw <= 60) {
-        }
-        document.getElementById("gray_out_post_page").style.height = `${defalt_gray_out_box_hight + now_total_input_height - defalt_total_input_height}px`
-        document.getElementById("post_input_box").style.height = `${defalt_post_input_box_height + now_total_input_height - defalt_total_input_height}px`
-        document.getElementById("main_body").style.height = `${defalt_gray_out_box_hight + now_total_input_height - defalt_total_input_height}px`
-    }
-
     function ready_to_post() {
         var blackout = document.getElementById("blackout_normal_window");
         var overview_tags_form = document.getElementById("dicision_tags_overview");
@@ -136,9 +143,7 @@
 
     document.getElementById("title_input").addEventListener("input", () => {
         let e1 = document.getElementById("title_input")
-        if (content_exclusion_pattern.test(e1.value)) {
-            e1.value = censor_content(e1.value)
-        }
+        e1.value = censor_content(e1.value)
     })
 
 
@@ -148,45 +153,41 @@
     var content_textarea_list = [content_textarea]
     const content_textarea_dummy = document.getElementById("content_textarea_dummy_1")
     var content_textarea_dummy_list = [content_textarea_dummy]
-    var pre_content_list = [""]
-
+    var content_split = [""]
     content_textarea.addEventListener("input", () => {
         if (input_content_flag == false) {
             input_content_flag = true
         }
         content_input_event(0)
-        relocation_post_box()
     })
     const rest_char_count_el = document.getElementById("rest_char_count")
     function content_input_event(textarea_index) {
-        let cursor_pos = content_textarea_list[textarea_index].selectionEnd
-        if (content_exclusion_pattern.test(content_textarea_list[textarea_index].value)) {
-            content_textarea_list[textarea_index].value = censor_content(content_textarea_list[textarea_index].value)
-            content_textarea_list[textarea_index].selectionEnd = cursor_pos
-            content_textarea_list[textarea_index].selectionStart = cursor_pos
+        let pure_content = ""
+        for (i = 0; i < content_split.length; i++) {
+            pure_content += content_textarea_list[i].value
         }
-        let now_char_count = check_charcter_count()
+        let now_char_count = pure_content.length
         if (now_char_count > 20000) {
-            for (i = 0; i < image_count + 1; i++) {
-                content_textarea[i].value = pre_content_list[i]
+            for (i = 0; i < content_split.length; i++) {
+                content_textarea_list[i] = content_split[i]
             }
         }
-        else if (now_char_count > 19000) {
-            rest_char_count_el.style.display = "block"
-            rest_char_count_el.textContent = `残り${20000 - now_char_count}文字`
-        }
         else {
-            rest_char_count_el.style.display = "none"
-            content_textarea_dummy_list[textarea_index].textContent = content_textarea_list[textarea_index].value + '\u200b'// + '\u200b'は改行した後何も書いてないときのため
-            pre_content_list[textarea_index] = content_textarea_list[textarea_index].value
+            content_split[textarea_index] = censor_content(content_textarea_list[textarea_index].value)
+            content_textarea_list[textarea_index].value = content_split[textarea_index]
+            content_textarea_dummy_list[textarea_index].textContent = content_split[textarea_index] + '\u200b'// + '\u200b'は改行した後何も書いてないときのため
+            if (now_char_count > 19000) {
+                rest_char_count_el.style.display = "block"
+                rest_char_count_el.textContent = `残り${20000 - now_char_count}文字`
+            }
+            else {
+                rest_char_count_el.style.display = "none"
+            }
         }
+
+        let cursor_pos = content_textarea_list[textarea_index].selectionEnd
     }
 
-    function reset_pre_content_list() {
-        for (i = 0; i < image_count + 1; i++) {
-            pre_content_list[i] = content_textarea_list[i].value
-        }
-    }
     var pre_focused_textarea_index = 0
 
     function focus_textare(textarea_index) {
@@ -287,92 +288,15 @@
                         image_input_processing_flag = true
                         var reader = new FileReader()
                         reader.onload = function (e) {
-                            if (image_count == 0) {
-                                content_textarea_dummy_list[0].style.minHeight = "0vw"
-                            }
                             image_src_list.splice(pre_focused_textarea_index, 0, e.target.result)
-                            if (input_content_flag == false) {
-
-                                input_content_flag = true
-                            }
-
-                            let new_content_textarea_set = document.createElement("div")
-                            new_content_textarea_set.id = `content_textarea_set_${pre_focused_textarea_index + 2}`
-                            new_content_textarea_set.classList.add("content_textarea_set")
-
-                            let new_content_textarea = document.createElement("textarea")
-                            new_content_textarea.id = `content_textarea_${pre_focused_textarea_index + 2}`
-                            new_content_textarea.classList.add("content_textarea")
-                            new_content_textarea.value = content_textarea_list[pre_focused_textarea_index].value.substring(pre_cursor_position)
-                            new_content_textarea.addEventListener("input", (e) => {
-                                content_input_event(Number(e.currentTarget.id.slice("content_textarea_".length)) - 1)
-                                relocation_post_box()
-                            })
-                            new_content_textarea.addEventListener("focus", (e) => {
-                                focus_textare(Number(e.currentTarget.id.slice("content_textarea_".length)) - 1)
-                            })
-                            content_textarea_list[pre_focused_textarea_index].value = content_textarea_list[pre_focused_textarea_index].value.slice(0, pre_cursor_position)
-                            content_textarea_dummy_list[pre_focused_textarea_index].textContent = content_textarea_list[pre_focused_textarea_index].value + "\u200b"
-                            let new_content_textarea_dummy = document.createElement("div")
-                            new_content_textarea_dummy.id = `content_textarea_dummy_${pre_focused_textarea_index + 2}`
-                            new_content_textarea_dummy.classList.add("content_textarea_dummy")
-                            new_content_textarea_dummy.textContent = new_content_textarea.value + "\u200b"
-
-                            let new_content_image_box = document.createElement("div")
-                            new_content_image_box.id = `content_image_box_${pre_focused_textarea_index + 1}`
-                            new_content_image_box.classList.add("content_image_box")
-
-                            let image_el = document.createElement("img")
-                            image_el.id = `content_image_${pre_focused_textarea_index + 1}`
-                            image_el.classList.add("content_image")
-                            image_el.src = image_src_list[pre_focused_textarea_index]
-                            image_el.addEventListener("load", () => { relocation_post_box() })
-
-                            let new_content_image_delete_button = document.createElement("button")
-                            new_content_image_delete_button.id = `content_image_delete_button_${pre_focused_textarea_index + 1}`
-                            new_content_image_delete_button.classList.add("content_image_delete_button")
-                            new_content_image_delete_button.textContent = "×"
-                            new_content_image_delete_button.addEventListener("click", (e) => {
-                                delete_image(Number(e.currentTarget.id.slice("content_image_delete_button_".length)) - 1)
-                            })
-
-                            let nazekairu = document.getElementById(`content_image_box_${pre_focused_textarea_index + 1}`)//なぜかIDを変える前に取得しないといけない
-                            for (let i = pre_focused_textarea_index; i < image_count; i++) {//idを重複させないだけが目的
-                                content_textarea_set_list[i + 1].id = `content_textarea_set_${i + 3}`
-                                content_textarea_list[i + 1].id = `content_textarea_${i + 3}`
-                                content_textarea_dummy_list[i + 1].id = `content_textarea_dummy_${i + 3}`
-                                content_image_element_list[i].id = `content_image_${i + 2}`
-                                content_image_box_list[i].id = `content_image_box_${i + 2}`
-                                content_image_delete_button_list[i].id = `content_image_delete_button_${i + 2}`
-                            }
-
-                            if (image_count == pre_focused_textarea_index) {
-                                content_textarea_box.appendChild(new_content_image_box)
-                                content_textarea_box.appendChild(new_content_textarea_set)
-                            }
-                            else {
-                                content_textarea_box.insertBefore(new_content_image_box, content_image_box_list[pre_focused_textarea_index])
-                                content_textarea_box.insertBefore(new_content_textarea_set, content_image_box_list[pre_focused_textarea_index])
-                            }
-                            new_content_textarea_set.appendChild(new_content_textarea)
-                            new_content_textarea_set.appendChild(new_content_textarea_dummy)
-                            new_content_image_box.appendChild(image_el)
-                            new_content_image_box.appendChild(new_content_image_delete_button)
-
-                            content_textarea_set_list.splice(pre_focused_textarea_index + 1, 0, new_content_textarea_set)
-                            content_textarea_list.splice(pre_focused_textarea_index + 1, 0, new_content_textarea)
-                            content_textarea_dummy_list.splice(pre_focused_textarea_index + 1, 0, new_content_textarea_dummy)
-
-                            content_image_box_list.splice(pre_focused_textarea_index, 0, new_content_image_box)
-                            content_image_element_list.splice(pre_focused_textarea_index, 0, image_el)
-                            content_image_delete_button_list.splice(pre_focused_textarea_index, 0, new_content_image_delete_button)
-
-                            document.activeElement = new_content_textarea
-                            pre_focused_textarea_index = pre_focused_textarea_index + 1
+                            content_split.splice(pre_focused_textarea_index + 1, 0, content_split[pre_focused_textarea_index].substring(pre_cursor_position));
+                            content_split[pre_focused_textarea_index] = content_split[pre_focused_textarea_index].slice(0, pre_cursor_position)
                             image_count++
+                            set_textarea()
+                            document.activeElement = content_textarea_list[pre_focused_textarea_index + 1]
+                            pre_focused_textarea_index = pre_focused_textarea_index + 1
                             image_input_processing_flag = false
-                            reset_pre_content_list()
-                            relocation_post_box()
+
                         }
                         reader.onerror = function () {
                             image_input_processing_flag = false
@@ -398,29 +322,94 @@
     }
 
 
+    const set_textarea = () => {
+        content_textarea_box.innerHTML = ""
+        content_textarea_set_list = []
+        content_textarea_list = []
+        content_textarea_dummy_list = []
+        content_image_box_list = []
+        content_image_element_list = []
+        content_image_delete_button_list = []
+
+        content_textarea_set_list[0] = document.createElement("div")
+        content_textarea_set_list[0].id = `content_textarea_set_${1}`
+        content_textarea_set_list[0].classList.add("content_textarea_set")
+        content_textarea_dummy_list[0] = document.createElement("div")
+        content_textarea_dummy_list[0].id = `content_textarea_dummy_${1}`
+        content_textarea_dummy_list[0].classList.add("content_textarea_dummy")
+        content_textarea_dummy_list[0].textContent = content_split[0] + "\u200b"
+        if (image_count == 0) {
+            content_textarea_dummy_list[0].style.minHeight = "120px"
+        }
+        content_textarea_list[0] = document.createElement("textarea")
+        content_textarea_list[0].id = `content_textarea_${1}`
+        content_textarea_list[0].classList.add("content_textarea")
+        content_textarea_list[0].value = content_split[0]
+        content_textarea_list[0].addEventListener("input", (e) => {
+            content_input_event(0)
+        })
+        content_textarea_list[0].addEventListener("focus", (e) => {
+            focus_textare(0)
+        })
+
+        content_textarea_box.appendChild(content_textarea_set_list[0])
+        content_textarea_set_list[0].appendChild(content_textarea_dummy_list[0])
+        content_textarea_set_list[0].appendChild(content_textarea_list[0])
+
+        for (let i = 0; i < image_count; i++) {
+            content_image_box_list[i] = document.createElement("div")
+            content_image_box_list[i].id = `content_image_box_${i + 1}`
+            content_image_box_list[i].classList.add("content_image_box")
+
+            content_image_element_list[i] = document.createElement("img")
+            content_image_element_list[i].id = `content_image_${i + 1}`
+            content_image_element_list[i].classList.add("content_image")
+            content_image_element_list[i].src = image_src_list[i]
+
+            content_image_delete_button_list[i] = document.createElement("button")
+            content_image_delete_button_list[i].id = `content_image_delete_button_${i + 1}`
+            content_image_delete_button_list[i].classList.add("content_image_delete_button")
+            content_image_delete_button_list[i].textContent = "×"
+            content_image_delete_button_list[i].addEventListener("click", (e) => {
+                delete_image(i)
+            })
+
+
+            content_textarea_box.appendChild(content_image_box_list[i])
+            content_image_box_list[i].appendChild(content_image_element_list[i])
+            content_image_box_list[i].appendChild(content_image_delete_button_list[i])
+
+            content_textarea_set_list[i + 1] = document.createElement("div")
+            content_textarea_set_list[i + 1].id = `content_textarea_set_${i + 2}`
+            content_textarea_set_list[i + 1].classList.add("content_textarea_set")
+            content_textarea_dummy_list[i + 1] = document.createElement("div")
+            content_textarea_dummy_list[i + 1].id = `content_textarea_dummy_${i + 2}`
+            content_textarea_dummy_list[i + 1].classList.add("content_textarea_dummy")
+            content_textarea_dummy_list[i + 1].textContent = content_split[i + 1] + "\u200b"
+            content_textarea_list[i + 1] = document.createElement("textarea")
+            content_textarea_list[i + 1].id = `content_textarea_${i + 2}`
+            content_textarea_list[i + 1].classList.add("content_textarea")
+            content_textarea_list[i + 1].value = content_split[i + 1]
+            content_textarea_list[i + 1].addEventListener("input", (e) => {
+                content_input_event(i + 1)
+            })
+            content_textarea_list[i + 1].addEventListener("focus", (e) => {
+                focus_textare(i + 1)
+            })
+
+            content_textarea_box.appendChild(content_textarea_set_list[i + 1])
+            content_textarea_set_list[i + 1].appendChild(content_textarea_dummy_list[i + 1])
+            content_textarea_set_list[i + 1].appendChild(content_textarea_list[i + 1])
+        }
+    }
+
     function delete_image(image_index) {
         image_list.splice(image_index, 1)
         image_src_list.splice(image_index, 1)
-        content_textarea_list[image_index].value += content_textarea_list[image_index + 1].value
-        content_textarea_dummy_list[image_index].textContent = content_textarea_list[image_index].value + "\u200b"
-        document.getElementById(`content_image_box_${image_index + 1}`).remove()
-        document.getElementById(`content_textarea_set_${image_index + 2}`).remove()
-        for (let i = image_index + 1; i < image_count; i++) {//この時点ではimage_countは減ってない
-            content_image_element_list[i].id = `content_image_${i}`
-            content_image_box_list[i].id = `content_image_box_${i}`
-            content_image_delete_button_list[i].id = `content_image_delete_button_${i}`
-            content_textarea_set_list[i + 1].id = `content_textarea_set_${i + 1}`
-            content_textarea_list[i + 1].id = `content_textarea_${i + 1}`
-            content_textarea_dummy_list[i + 1].id = `content_textarea_dummy_${i + 1}`
-        }
-        content_textarea_set_list.splice(image_index + 1, 1)
-        content_textarea_list.splice(image_index + 1, 1)
-        content_textarea_dummy_list.splice(image_index + 1, 1)
-        content_image_element_list.splice(image_index, 1)
-        content_image_box_list.splice(image_index, 1)
-        content_image_delete_button_list.splice(image_index, 1)
+        content_split[image_index] += content_split[image_index + 1]
+        content_split.splice(image_index + 1, 1)
         image_count--
-        reset_pre_content_list()
+        set_textarea()
     }
 
     document.getElementById("image_input").addEventListener("change", () => {
@@ -468,23 +457,27 @@
             e3.selectionEnd = cursor_pos
         }
         dummy3.textContent = e3.value + '\u200b'
-        relocation_post_box()
     })
 
     const tags_exclusion_pattern = /<|>| |　|,|\u200b|\t|\n|\r/g
     var tags_count = 1
+    var valid_tag_list = []//tagのindexのlist
+    var all_tag_list = [""]
+
     const add_tag_button = document.getElementById("add_tag_button");
 
-    function input_tag_input(conut) {
-        document.getElementById(`tag_input_${conut}`).value = censor_content(document.getElementById(`tag_input_${conut}`).value)
-        document.getElementById(`tag_input_${conut}`).value = document.getElementById(`tag_input_${conut}`).value.replace(tags_exclusion_pattern, "")
+    function input_tag_input(index) {
+        all_tag_list[index] = censor_content(document.getElementById(`tag_input_${index + 1}`).value)
+        all_tag_list[index] = all_tag_list[index].replace(tags_exclusion_pattern, "")
+        document.getElementById(`tag_input_${index + 1}`).value = all_tag_list[index]
     }
-    document.getElementById("tag_input_1").addEventListener("input", input_tag_input.bind(null, 1))
+    document.getElementById("tag_input_1").addEventListener("input", input_tag_input.bind(null, 0))
 
     function add_tag() {
         if (tags_count <= 9)//タグが9個のときまでタグ入力ボックスを一つ追加つまりタグは最大10個
         {
             tags_count += 1;
+            all_tag_list.push("")
             var tag_input_box = document.createElement("div");
             tag_input_box.classList.add("tag_input_box");
             document.getElementById("tags_box").appendChild(tag_input_box);
@@ -495,8 +488,7 @@
             tag_input.type = "text"
             tag_input.maxLength = "20"
             tag_input.placeholder = "タグを入力(省略可能)"
-            tag_input.addEventListener("input", input_tag_input.bind(null, tags_count))
-            tag_input.addEventListener("input", ()=>{relocation_post_box()})
+            tag_input.addEventListener("input", input_tag_input.bind(null, tags_count - 1))
             tag_input_box.appendChild(tag_input)
         }
     }
@@ -570,6 +562,7 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data["result"] == "success") {
+                                    posted_flag = true
                                     location.href = (`{% url 'home' %}post/${data["content_id"]}`)
                                 }
                                 else if (data["result"] == "title_overlap") {
@@ -602,6 +595,7 @@
                                         .then(response => response.json())
                                         .then(data => {
                                             if (data["result"] == "success") {
+                                                posted_flag = true
                                                 location.href = (`{% url 'home' %}post/${data["content_id"]}`)
                                             }
                                             else if (data["result"] == "title_overlap") {
@@ -630,8 +624,6 @@
     }
 
     const content_image_input_box = document.getElementById("content_image_input_box")
-    const defalt_image_input_box_y_pos_top_divided_vw = (content_image_input_box.getBoundingClientRect().top + window.pageYOffset) / onevw
-
     function constant_loop() {
         set_image_input_position()
         requestAnimationFrame(constant_loop);
@@ -641,41 +633,26 @@
 
     function set_image_input_position() {
         try {
-            onevh = document.documentElement.clientHeight / 100
-            onevw = document.documentElement.clientWidth / 100
             let content_textarea_box_y_pos_top = content_textarea_box.getBoundingClientRect().top
             let content_textarea_box_y_pos_bottom = content_textarea_box.getBoundingClientRect().bottom
             let image_input_y_pos_top = content_image_input_box.getBoundingClientRect().top
             let image_input_y_pos_bottom = content_image_input_box.getBoundingClientRect().bottom
             image_input_y_pos_top = content_image_input_box.getBoundingClientRect().top
             image_input_y_pos_bottom = content_image_input_box.getBoundingClientRect().bottom
-            let scrolly = window.pageYOffset
+            let scrolly = main_middle.scrollTop
             if (image_input_y_pos_top < content_textarea_box_y_pos_top && false) {
                 content_image_input_box.style.top = "0px"
             }
-            else if (scrolly > content_textarea_box_y_pos_bottom) {
-                content_image_input_box.style.top = `${content_textarea_box.offsetHeight - content_image_input_box.offsetHeight}px`//style.bottomだと機能しない
-            }
             else {
-                content_image_input_box.style.top = `${scrolly - defalt_image_input_box_y_pos_top_divided_vw * onevw + 20 * onevh}px`
                 content_image_input_box.style.top = `${scrolly}px`
             }
 
-            
+
         } catch (error) {
             alert(error)
         }
 
     }
-
-    window.addEventListener("scroll", () => {
-        set_image_input_position()
-    })
-
-    window.addEventListener("touchmove", () => {
-        //set_image_input_position()
-    })
 </script>
-</div>
 
 {% endblock %}

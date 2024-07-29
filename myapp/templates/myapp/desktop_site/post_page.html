@@ -1,81 +1,522 @@
-{% extends 'myapp/base.html' %}
+{% extends 'myapp/desktop_site/base.html' %}
 {% block head %}
-<title>投稿</title>
-{% endblock %}
-{% block content %}
-<h2>タイトル</h2>
-<div class="title_input_box">
-    <input class="title_input" id="title_input" type="text" name="title" form="post" maxlength="50" title="タイトル入力" placeholder="タイトルを入力"/>
-</div><br>
-<h2>内容</h2>
-<div class="content_input_box">
-    <div class="content_textarea_dummy" id="content_textarea_dummy" aria-hidden="true">内容を入力する</div>
-    <textarea id="content_textarea" class="content_textarea" type="text" name="content" form="post" maxlength="20000"
-        title="内容入力"></textarea>
-</div><br>
-<h2>概要</h2>
-<div class="overview_input_box">
-    <div id="overview_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true">概要を入力する</div>
-    <textarea id="overview_textarea" class="overview_textarea" type="text" name="overview" form="post" maxlength="100"
-        title="概要入力"></textarea>
-</div><br>
-<div class="tags_box" id="tags_box">
-    <div class="tag_input_box">
-        <div class="tag_input_dummy" id="tag_input_dummy_1" aria-hidden="true">タグを入力</div>
-        <input class="tag_input" id="tag_input_1" type="text" form="post" maxlength="20" />
-    </div>
-    <button class="add_tag_button" id="add_tag_button" type="button" onclick="add_tag()">+</button>
-    <input type="hidden" id="joined_tags" name="joined_tags" value="" form="post" aria-hidden="true">
-</div>
-<div class="post_to_database_box">
-    <button class="post_button" id="post_button" type="button" onclick="check_and_post()">投稿</button>
-    <form name="post_form" id="post" action="{% url 'home' %}post/process/" method="POST">{%csrf_token %}
-    </form>
-</div>
 <script>
+    var posted_flag = false
+    window.addEventListener('beforeunload', function (e) {
+        if (posted_flag == false) {
+            var confirmationMessage = 'ページを離れたら内容が消えてしまいます、よろしいですか?';
 
+            e.returnValue = confirmationMessage; // 古いブラウザ向けの互換性のために設定
+            return confirmationMessage;          // ほとんどのブラウザで動作
+        }
+
+    });
 </script>
 {% endblock %}
-{% block out_of_box %}
+{% block title %}
+投稿
+{% endblock %}
+{% block content %}
+<div id="post_input_box" class="post_input_box">
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">タイトル</h2>
+    </div>
+    <div class="title_input_box">
+        <input class="title_input" id="title_input" type="text" name="title" form="post" maxlength="50" title="タイトル入力"
+            placeholder="タイトルを入力" />
+    </div>
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">本文</h2>
+    </div>
+    <div class="content_textarea_box">
+        <div id="content_textarea_box">
+            <div id="content_textarea_set_1" class="content_textarea_set">
+                <div class="content_textarea_dummy" style="min-height:120px;" id="content_textarea_dummy_1"
+                    aria-hidden="true">仮テキスト</div>
+                <textarea id="content_textarea_1" class="content_textarea" type="text" name="content" form="post"
+                    maxlength="20000" title="本文入力" placeholder="本文を入力する"></textarea>
+            </div>
+        </div>
+        <div class="content_image_input_box" id="content_image_input_box">
+            <label for="image_input">
+                <svg role="img" xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24"
+                    aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                    stroke-linejoin="miter" fill="none" color="#5a9fa6">
+                    <title id="imageIconTitle">画像を挿入</title>
+                    <rect width="18" height="18" x="3" y="3" />
+                    <path stroke-linecap="round" d="M3 14l4-4 11 11" />
+                    <circle cx="13.5" cy="7.5" r="2.5" />
+                    <path stroke-linecap="round" d="M13.5 16.5L21 9" />
+                </svg>
+            </label>
+            <input id="image_input" type="file" style="display: none;">
+        </div>
+    </div>
+    <div class="rest_char_count" id="rest_char_count">残り2000文字</div>
 
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">概要</h2>
+    </div>
+    <div id="overview_input_box" class="overview_input_box">
+        <div id="overview_textarea_dummy" class="overview_textarea_dummy" aria-hidden="true"></div>
+        <textarea id="overview_textarea" class="overview_textarea" type="text" name="overview" form="post"
+            maxlength="100" title="概要入力" placeholder="概要を入力する(省略可能)"></textarea>
+    </div>
+
+    <div class="post_text_box">
+        <div class="general_vertical_line" style="margin-left: 2%; position: absolute;"></div>
+        <h2 class="post_page_text">タグ</h2>
+    </div>
+    <div class="tags_box" id="tags_box">
+        <button class="add_tag_button" id="add_tag_button" type="button" onclick="add_tag()">
+            <svg role="img" xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6" style="position: relative;margin-top: -4px;display: block;
+            ">
+                <title id="plusIconTitle">画像を入力</title>
+                <path d="M20 12L4 12M12 4L12 20" />
+            </svg>
+        </button>
+        <div class="tag_input_box">
+            <input class="tag_input" id="tag_input_1" type="text" form="post" maxlength="20"
+                placeholder="タグを入力(省略可能)" />
+        </div>
+        <input type="hidden" id="joined_tags" name="joined_tags" value="" form="post" aria-hidden="true">
+    </div>
+    <div class="post_button_box">
+        <button class="post_button" id="post_button" type="button" onclick="check_and_post()">投稿</button>
+        <form name="post_form" id="post" action="{% url 'home' %}post/process/" method="POST">{%csrf_token %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block sub_left %}
+<div class="box_title">プレビュー</div>
+<div id="listed_post" class="post_display_box" style="overflow-y: scroll; max-height: calc(100vh - 82px - 65px);">
+    <div id="listed_post_box_left" class="post_box_left">
+        <div id="listed_post_icon_box" class="listed_post_icon_box"><a id="listed_post_icon"
+                class="listed_post_icon"><img class="listed_post_icon"
+                    src="/media/user_icons/user_icon_mini_{{user_id}}.png" alt="icon"></a></div>
+    </div>
+    <div id="listed_post_box_right" class="post_box_right"><a id="listed_post_username"
+            class="listed_post_username">{{username}}</a><a id="preview_title_dummy" class="post_title">タイトル</a>
+        <div id="listed_post_date" class="listed_post_date">投稿日 1969年07月21日05時17分</div>
+        <div id="listed_post_overview_box" class="post_overview_box">
+            <div id="preview_overview_dummy" class="post_title_overview"></div>
+        </div>
+    </div>
+    <div class="post_content_box">
+        <div id="preview_content_dummy_box" class="preview_content_box">
+            <div id="preview_content_dummy_1" class="preview_content">本文プレビュー</div>
+        </div>
+    </div>
+    <div id="content_button_box" class="content_button_box"><button id="like_button_box" class="like_button_box">
+            <div id="like_button" class="like_button" title="ダミー"><img id="like_button_img_14" alt="icon"
+                    class="like_button" src="/media/like_button_normal.svg"></div>
+            <div id="like_count" class="review_count">0</div>
+        </button>
+        <button id="dislike_button_box" class="dislike_button_box">
+            <div id="dislike_button" class="dislike_button" title="見せかけ"><img id="dislike_button_img_14" alt="icon"
+                    class="dislike_button" src="/media/dislike_button_normal.svg"></div>
+            <div id="dislike_count" class="review_count">0</div>
+        </button>
+        <button id="open_comment_button" class="open_comment_button" type="button" title="飾り">コメント</button>
+        <button id="report_button" class="report_button" title="張りぼて">通報</button>
+    </div>
+    <div id="listed_post_tags_box" class="post_tags_box" style="display: none;">
+        <div id="preview_tag_box_1" class="post_tag_box" style="display: none;"><a id="preview_tag_1"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_2" class="post_tag_box" style="display: none;"><a id="preview_tag_2"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_3" class="post_tag_box" style="display: none;"><a id="preview_tag_3"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_4" class="post_tag_box" style="display: none;"><a id="preview_tag_4"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_5" class="post_tag_box" style="display: none;"><a id="preview_tag_5"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_6" class="post_tag_box" style="display: none;"><a id="preview_tag_6"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_7" class="post_tag_box" style="display: none;"><a id="preview_tag_7"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_8" class="post_tag_box" style="display: none;"><a id="preview_tag_8"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_9" class="post_tag_box" style="display: none;"><a id="preview_tag_9"
+                class="post_tag">#</a></div>
+        <div id="preview_tag_box_10" class="post_tag_box" style="display: none;"><a id="preview_tag_10"
+                class="post_tag">#</a></div>
+    </div>
+</div>
+{% endblock %}
+{% block script %}
 
 <script>
+    const main_middle = document.getElementById("main_middle")
+    const delimiter = "\u200b"
     const user_id = Number("{{user_id}}")
     const session_id_key_1 = 'session_id_1';
     const session_id_key_2 = 'session_id_2';
     /// 正規表現でcookie値を取得
     const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1];
     const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1];
+
+    var onevw = document.documentElement.clientWidth / 100
+    var onevh = document.documentElement.clientHeight / 100
+    const defalt_gray_out_box_hight = document.getElementById("post_input_box").offsetHeight
+    const defalt_post_input_box_height = document.getElementById("post_input_box").offsetHeight
+    const defalt_total_input_height = document.getElementById("content_textarea_box").offsetHeight + document.getElementById("overview_input_box").offsetHeight + document.getElementById("tags_box").offsetHeight
+
     if (user_id <= 0) {
         location.href = ("{% url 'home' %}signup/")
     }
+
+    const content_exclusion_pattern = /(<|>|\u200b|\t|\&lt|\&gt)+/g
+    function censor_content(text) {
+        let censored_text = text.replace(/</g, "＜")
+        censored_text = censored_text.replace(/>/g, "＞")
+        censored_text = censored_text.replace(/\&lt/g, "＆lt")
+        censored_text = censored_text.replace(/\&gt/g, "＆gt")
+        censored_text = censored_text.replace(content_exclusion_pattern, "")
+        censored_text = censored_text.replace(/\n\r/g, "\n")
+        censored_text = censored_text.replace(/\r/g, "\n")
+        return censored_text
+    }
+
+    function count_specific_word(text, exclude_word) {
+
+        let matches = text.match(new RegExp(exclude_word, "g"))
+        return matches ? matches.length : 0
+    }
+
     function ready_to_post() {
         var blackout = document.getElementById("blackout_normal_window");
         var overview_tags_form = document.getElementById("dicision_tags_overview");
         blackout.style.display = "inline"
         overview_tags_form.style.display = "inline"
     }
-    var input_content = false;
+    var input_content_flag = false;
     var input_overview = false;
-    const content_exclusion_patteen = /(<|>|\u200b|\t)+/g
+
     document.getElementById("title_input").addEventListener("input", () => {
         let e1 = document.getElementById("title_input")
-        e1.value = e1.value.replace(content_exclusion_patteen, "")
+        e1.value = censor_content(e1.value)
+        document.getElementById("preview_title_dummy").textContent = e1.value == "" ? "タイトル" : e1.value + "\u200b"
     })
-    document.getElementById("content_textarea").addEventListener('input', () => {
-        let e2 = document.getElementById("content_textarea")
-        let dummy = document.getElementById('content_textarea_dummy')
-        if (input_content == false) {
-            input_content = true
-            dummy.textContent = ""
-            dummy.style.visibility = "hidden"
+
+
+    var content_textarea_set_list = [document.getElementById("content_textarea_set_1")]
+    const content_textarea_box = document.getElementById("content_textarea_box")
+    const content_textarea = document.getElementById("content_textarea_1")
+    var content_textarea_list = [content_textarea]
+    const content_textarea_dummy = document.getElementById("content_textarea_dummy_1")
+    var content_textarea_dummy_list = [content_textarea_dummy]
+    const preview_content_dummy_box = document.getElementById("preview_content_dummy_box")
+    var preview_content_dummy_list = [document.getElementById("preview_content_dummy_1")]
+    var pre_content_list = [""]
+    var content_split = [""]
+    content_textarea.addEventListener("input", () => {
+        if (input_content_flag == false) {
+            input_content_flag = true
         }
-        dummy.textContent = e2.value + '\u200b'
-        e2.value = e2.value.replace(content_exclusion_patteen, "")
-        e2.value = e2.value.replace(/\n\r/g, "\n")
-        e2.value = e2.value.replace(/\r/g, "\n")
+        content_input_event(0)
     })
+    const rest_char_count_el = document.getElementById("rest_char_count")
+    function content_input_event(textarea_index) {
+        let pure_content = ""
+        for (i = 0; i < content_split.length; i++) {
+            pure_content += content_textarea_list[i].value
+        }
+        let now_char_count = pure_content.length
+        if (now_char_count > 20000) {
+            for (i = 0; i < content_split.length; i++) {
+                content_textarea_list[i] = content_split[i]
+            }
+        }
+        else {
+            content_split[textarea_index] = censor_content(content_textarea_list[textarea_index].value)
+            content_textarea_list[textarea_index].value = content_split[textarea_index]
+            content_textarea_dummy_list[textarea_index].textContent = content_split[textarea_index] + '\u200b'// + '\u200b'は改行した後何も書いてないときのため
+            preview_content_dummy_list[textarea_index].textContent = image_count == 0 && pure_content == "" ? "本文プレビュー" : content_split[textarea_index] + '\u200b'
+            if (now_char_count > 19000) {
+                rest_char_count_el.style.display = "block"
+                rest_char_count_el.textContent = `残り${20000 - now_char_count}文字`
+            }
+            else {
+                rest_char_count_el.style.display = "none"
+            }
+        }
+
+        let cursor_pos = content_textarea_list[textarea_index].selectionEnd
+    }
+
+    function reset_pre_content_list() {
+        for (i = 0; i < image_count + 1; i++) {
+            pre_content_list[i] = content_textarea_list[i].value
+        }
+    }
+    var pre_focused_textarea_index = 0
+
+    function focus_textare(textarea_index) {
+        pre_focused_textarea_index = textarea_index
+        isfocused_loop()
+    }
+
+    var pre_cursor_position = 0
+
+    function isfocused_loop() {
+        if (document.activeElement == content_textarea_list[pre_focused_textarea_index]) {
+            pre_cursor_position = content_textarea_list[pre_focused_textarea_index].selectionEnd
+            requestAnimationFrame(isfocused_loop);
+        }
+    }
+
+    content_textarea.addEventListener('focus', () => {
+        focus_textare(0)
+    })
+
+    var image_input_processing_flag = false
+    var image_list = []
+    var image_count = 0
+    var image_src_list = []
+    var content_image_box_list = []
+    var content_image_element_list = []
+    var content_image_delete_button_list = []
+    var preview_image_list = []
+    const image_input = document.getElementById("image_input")
+
+    function compressImage(imageFile, maxSize = 500 * 1024) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const img = new Image();
+                img.src = event.target.result;
+
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Calculate the width and height while maintaining aspect ratio
+                    const width = img.width;
+                    const height = img.height;
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw the image on canvas
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Reduce quality until the size is less than maxSize
+                    let quality = 0.9;
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                    while (dataUrl.length > maxSize && quality > 0.1) {
+                        quality -= 0.05;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+
+                    // Convert the data URL to a Blob and then to a File
+                    fetch(dataUrl)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const compressedFile = new File([blob], imageFile.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        })
+                        .catch(err => reject(err));
+                };
+
+                img.onerror = function (err) {
+                    reject(err);
+                };
+            };
+
+            reader.onerror = function (err) {
+                reject(err);
+            };
+
+            reader.readAsDataURL(imageFile);
+        });
+    }
+    async function insert_image_between_textarea() {
+        if (image_input_processing_flag == false) {
+            let sssddd = await compressImage(image_input.files[0])
+            image_list.splice(pre_focused_textarea_index, 0, sssddd)
+            image_input.value = ""
+            let lastDotPosition = image_list[pre_focused_textarea_index].name.lastIndexOf('.')
+            if (lastDotPosition == -1) {
+                alert("使用できる画像はpngとjpegのみです\n正しいファイルか確認してください")
+            }
+            else {
+                let extension = image_list[pre_focused_textarea_index].name.substring(lastDotPosition + 1).toLowerCase()
+                if (extension == "png" || extension == "jpg" || extension == "jpeg") {
+                    if (image_input.files && image_list[pre_focused_textarea_index]) {
+                        image_input_processing_flag = true
+                        var reader = new FileReader()
+                        reader.onload = function (e) {
+                            image_src_list.splice(pre_focused_textarea_index, 0, e.target.result)
+                            content_split.splice(pre_focused_textarea_index + 1, 0, content_split[pre_focused_textarea_index].substring(pre_cursor_position));
+                            content_split[pre_focused_textarea_index] = content_split[pre_focused_textarea_index].slice(0, pre_cursor_position)
+                            image_count++
+                            set_textarea()
+                            document.activeElement = content_textarea_list[pre_focused_textarea_index + 1]
+                            pre_focused_textarea_index = pre_focused_textarea_index + 1
+                            image_input_processing_flag = false
+
+                        }
+                        reader.onerror = function () {
+                            image_input_processing_flag = false
+                            alert("エラー\nページを再読み込みします")
+                            window.location.reload(true)
+                        }
+                        reader.readAsDataURL(image_list[pre_focused_textarea_index])
+                    }
+                    else {
+                        alert("エラー")
+                    }
+                }
+                else {
+                    alert("使用できる画像はpngとjpegのみです\n正しいファイルか確認してください")
+                }
+            }
+
+
+        }
+        else {
+            alert("処理中です")
+        }
+    }
+
+    let current_preview_pos_dummy = 0//yが50%にスクロール 完璧より完成　後回し
+
+    const set_textarea = () => {
+        content_textarea_box.innerHTML = ""
+        preview_content_dummy_box.innerHTML = ""
+        content_textarea_set_list = []
+        content_textarea_list = []
+        content_textarea_dummy_list = []
+        preview_content_dummy_list = []
+        content_image_box_list = []
+        content_image_element_list = []
+        content_image_delete_button_list = []
+        preview_image_list = []
+
+        content_textarea_set_list[0] = document.createElement("div")
+        content_textarea_set_list[0].id = `content_textarea_set_${1}`
+        content_textarea_set_list[0].classList.add("content_textarea_set")
+        content_textarea_dummy_list[0] = document.createElement("div")
+        content_textarea_dummy_list[0].id = `content_textarea_dummy_${1}`
+        content_textarea_dummy_list[0].classList.add("content_textarea_dummy")
+        content_textarea_dummy_list[0].textContent = content_split[0] + "\u200b"
+        if (image_count == 0) {
+            content_textarea_dummy_list[0].style.minHeight = "120px"
+        }
+        content_textarea_list[0] = document.createElement("textarea")
+        content_textarea_list[0].id = `content_textarea_${1}`
+        content_textarea_list[0].classList.add("content_textarea")
+        content_textarea_list[0].value = content_split[0]
+        content_textarea_list[0].addEventListener("input", (e) => {
+            content_input_event(0)
+        })
+        content_textarea_list[0].addEventListener("focus", (e) => {
+            focus_textare(0)
+        })
+        preview_content_dummy_list[0] = document.createElement("div")
+        preview_content_dummy_list[0].id = `preview_content_dummy_${1}`
+        preview_content_dummy_list[0].classList.add("preview_content")
+        preview_content_dummy_list[0].textContent = content_split[0] + "\u200b"
+
+        content_textarea_box.appendChild(content_textarea_set_list[0])
+        content_textarea_set_list[0].appendChild(content_textarea_dummy_list[0])
+        content_textarea_set_list[0].appendChild(content_textarea_list[0])
+        preview_content_dummy_box.appendChild(preview_content_dummy_list[0])
+
+        for (let i = 0; i < image_count; i++) {
+            content_image_box_list[i] = document.createElement("div")
+            content_image_box_list[i].id = `content_image_box_${i + 1}`
+            content_image_box_list[i].classList.add("content_image_box")
+
+            content_image_element_list[i] = document.createElement("img")
+            content_image_element_list[i].id = `content_image_${i + 1}`
+            content_image_element_list[i].classList.add("content_image")
+            content_image_element_list[i].src = image_src_list[i]
+
+            content_image_delete_button_list[i] = document.createElement("button")
+            content_image_delete_button_list[i].id = `content_image_delete_button_${i + 1}`
+            content_image_delete_button_list[i].classList.add("content_image_delete_button")
+            content_image_delete_button_list[i].textContent = "×"
+            content_image_delete_button_list[i].addEventListener("click", (e) => {
+                delete_image(i)
+            })
+
+            preview_image_list[i] = document.createElement("img")
+            preview_image_list[i].classList.add("preview_image")
+            preview_image_list[i].src = image_src_list[i]
+
+            content_textarea_box.appendChild(content_image_box_list[i])
+            content_image_box_list[i].appendChild(content_image_element_list[i])
+            content_image_box_list[i].appendChild(content_image_delete_button_list[i])
+            preview_content_dummy_box.appendChild(preview_image_list[i])
+
+            content_textarea_set_list[i + 1] = document.createElement("div")
+            content_textarea_set_list[i + 1].id = `content_textarea_set_${i + 2}`
+            content_textarea_set_list[i + 1].classList.add("content_textarea_set")
+            content_textarea_dummy_list[i + 1] = document.createElement("div")
+            content_textarea_dummy_list[i + 1].id = `content_textarea_dummy_${i + 2}`
+            content_textarea_dummy_list[i + 1].classList.add("content_textarea_dummy")
+            content_textarea_dummy_list[i + 1].textContent = content_split[i + 1] + "\u200b"
+            content_textarea_list[i + 1] = document.createElement("textarea")
+            content_textarea_list[i + 1].id = `content_textarea_${i + 2}`
+            content_textarea_list[i + 1].classList.add("content_textarea")
+            content_textarea_list[i + 1].value = content_split[i + 1]
+            content_textarea_list[i + 1].addEventListener("input", (e) => {
+                content_input_event(i + 1)
+            })
+            content_textarea_list[i + 1].addEventListener("focus", (e) => {
+                focus_textare(i + 1)
+            })
+            preview_content_dummy_list[i + 1] = document.createElement("div")
+            preview_content_dummy_list[i + 1].id = `preview_content_dummy_${i + 2}`
+            preview_content_dummy_list[i + 1].classList.add("preview_content")
+            preview_content_dummy_list[i + 1].textContent = content_split[i + 1] + "\u200b"
+
+            content_textarea_box.appendChild(content_textarea_set_list[i + 1])
+            content_textarea_set_list[i + 1].appendChild(content_textarea_dummy_list[i + 1])
+            content_textarea_set_list[i + 1].appendChild(content_textarea_list[i + 1])
+            preview_content_dummy_box.appendChild(preview_content_dummy_list[i + 1])
+        }
+    }
+
+    function delete_image(image_index) {
+        image_list.splice(image_index, 1)
+        image_src_list.splice(image_index, 1)
+        content_split[image_index] += content_split[image_index + 1]
+        content_split.splice(image_index + 1, 1)
+        image_count--
+        set_textarea()
+    }
+
+    document.getElementById("image_input").addEventListener("change", () => {
+        insert_image_between_textarea()
+    })
+
+    function check_charcter_count() {
+        char_count = 0
+        for (i = 0; i < image_count + 1; i++) {
+            char_count += content_textarea_list[i].value.length
+        }
+        return char_count
+    }
+
+    const height_of_new_line = parseInt(getComputedStyle(content_textarea).lineHeight, 10)
+    var content_image_new_line_numbre_list = []
+
+
     document.getElementById("overview_textarea").addEventListener('input', () => {
+        let cursor_pos = document.getElementById("overview_textarea").selectionEnd
         let e3 = document.getElementById("overview_textarea")
         let dummy3 = document.getElementById("overview_textarea_dummy")
         if (input_overview == false) {
@@ -83,10 +524,11 @@
             dummy3.textContent = ""
             dummy3.style.visibility = "hidden"
         }
-        dummy3.textContent = e3.value + '\u200b'
-        e3.value = e3.value.replace(content_exclusion_patteen, "")
-        e3.value = e3.value.replace(/\n\r/g, "\n")
-        e3.value = e3.value.replace(/\r/g, "\n")
+        if (content_exclusion_pattern.test(e3.value)) {
+            e3.value = censor_content(e3.value)
+            e3.selectionStart = cursor_pos
+            e3.selectionEnd = cursor_pos
+        }
         let matches = e3.value.match(/\n/g)
         let new_line_count = matches ? matches.length : 0
         if (new_line_count >= 3) {
@@ -98,111 +540,233 @@
                     e3.value += "\n"//new_line_count >= 3なので無条件で改行が足せる
                 }
             }
-
+            e3.selectionStart = cursor_pos
+            e3.selectionEnd = cursor_pos
+        }
+        dummy3.textContent = e3.value + '\u200b'
+        if (e3.value == "") {
+            document.getElementById("preview_overview_dummy").textContent = ""
+        }
+        else {
+            document.getElementById("preview_overview_dummy").textContent = e3.value + '\u200b'
         }
     })
-    const tags_exclusion_patteen = /(<|>| |　|,|\u200b|\t)+/g
-    var tags_count = 1;
+
+    const tags_exclusion_pattern = /<|>| |　|,|\u200b|\t|\n|\r/g
+    var tags_count = 1
+    var valid_tag_list = []//tagのindexのlist
+    var all_tag_list = [""]
+
     const add_tag_button = document.getElementById("add_tag_button");
-    function focus_tag_input(conut) {
-        document.getElementById(`tag_input_dummy_${conut}`).style.visibility = "hidden"
+
+    const preview_tags_box = document.getElementById("listed_post_tags_box")
+
+    function input_tag_input(index) {
+        all_tag_list[index] = censor_content(document.getElementById(`tag_input_${index + 1}`).value)
+        all_tag_list[index] = all_tag_list[index].replace(tags_exclusion_pattern, "")
+        if (all_tag_list[index] == "") {
+            document.getElementById(`preview_tag_box_${index + 1}`).style.display = "none"
+            if (valid_tag_list.includes(index)) {
+                valid_tag_list = valid_tag_list.filter(element => element !== index);
+                if (valid_tag_list.length == 0) {
+                    preview_tags_box.style.display = "none"
+                }
+            }
+        }
+        else {
+            document.getElementById(`preview_tag_box_${index + 1}`).style.display = "block"
+            document.getElementById(`preview_tag_${index + 1}`).textContent = "#" + all_tag_list[index]
+            if (!valid_tag_list.includes(index)) {
+                if (valid_tag_list.length == 0) {
+                    preview_tags_box.style.display = "flex"//flexなことに注意
+                }
+                valid_tag_list.push(index)
+            }
+        }
+        document.getElementById(`tag_input_${index + 1}`).value = all_tag_list[index]
     }
-    function input_tag_input(conut) {
-        document.getElementById(`tag_input_${conut}`).value = document.getElementById(`tag_input_${conut}`).value.replace(tags_exclusion_patteen, "")
-    }
-    document.getElementById("tag_input_1").addEventListener("focus", focus_tag_input.bind(null, 1))
+    document.getElementById("tag_input_1").addEventListener("input", input_tag_input.bind(null, 0))
+
     function add_tag() {
         if (tags_count <= 9)//タグが9個のときまでタグ入力ボックスを一つ追加つまりタグは最大10個
         {
             tags_count += 1;
+            all_tag_list.push("")
             var tag_input_box = document.createElement("div");
             tag_input_box.classList.add("tag_input_box");
-            add_tag_button.before(tag_input_box);
-            var tag_input_dummy = document.createElement("div");
-            tag_input_dummy.classList.add("tag_input_dummy");
-            tag_input_dummy.id = `tag_input_dummy_${tags_count}`
-            tag_input_dummy.textContent = "タグを入力"
-            tag_input_box.appendChild(tag_input_dummy)
+            document.getElementById("tags_box").appendChild(tag_input_box);
+
             var tag_input = document.createElement("input");
             tag_input.classList.add("tag_input")
             tag_input.id = `tag_input_${tags_count}`
             tag_input.type = "text"
             tag_input.maxLength = "20"
-            tag_input.addEventListener("focus", focus_tag_input.bind(null, tags_count))
-            tag_input.addEventListener("input", input_tag_input.bind(null, tags_count))
+            tag_input.placeholder = "タグを入力(省略可能)"
+            tag_input.addEventListener("input", input_tag_input.bind(null, tags_count - 1))
             tag_input_box.appendChild(tag_input)
         }
     }
+    var post_processing_flag = false
     function check_and_post() {
-        let title = document.getElementById("title_input").value
-        let content = document.getElementById("content_textarea").value
-        let overview = document.getElementById("overview_textarea").value
-        if (document.getElementById("title_input").value == "") { alert("タイトルを入力してください") }
-        else if (document.getElementById("content_textarea").value == "") { alert("内容を入力してください") }
-        else if (content_exclusion_patteen.test(title)) {
-
-        }
-        else if (content_exclusion_patteen.test(content)) {
-
-        }
-        else if (content_exclusion_patteen.test(overview)) {
-
-        }
-        else if (title.length >= 51) {
-
-        }
-        else if (content.length >= 20001) {
-
-        }
-        else if (overview.length >= 101) {
-
-        }
-        else {
-            joined_tags = document.getElementById("joined_tags")
-            var tags_error = false
-            for (let i = 0; i < tags_count; i++) {
-                if (tags_exclusion_patteen.test(document.getElementById(`tag_input_${i + 1}`).value)) {
-                    tags_error = true;
-                }
-                joined_tags.value += document.getElementById(`tag_input_${i + 1}`).value//タグのidは1から数える
-                if (i < (tags_count - 1)) { joined_tags.value += "," }//最後のタグではないなら
+        let formData = new FormData();
+        if (post_processing_flag == false) {
+            let title = document.getElementById("title_input").value
+            let content = ""
+            for (let i = 0; i < image_count; i++) {
+                content += censor_content(content_textarea_list[i].value)
+                content += ">" + `${i + 1}` + ">"
             }
-            if (tags_error) {
-                alert("タグに , < > と全角半角の空白は使用できません")
-                joined_tags.value = ""
+            content += censor_content(content_textarea_list[image_count].value)
+            let overview = document.getElementById("overview_textarea").value
+            if (document.getElementById("title_input").value == "") { alert("タイトルを入力してください") }
+            else if (content == "") { alert("内容を入力してください") }
+            else if (content_exclusion_pattern.test(title)) {
+
+            }
+            else if (content_exclusion_pattern.test(overview)) {
+
+            }
+            else if (/\u200b/g.test(content)) {
+                alert("エラー 0幅文字は使えません")
+            }
+            else if (title.length >= 51) {
+
+            }
+            else if (content.length >= 20001) {
+
+            }
+            else if (overview.length >= 101) {
+
             }
             else {
-                request_json_data = {
-                    session_id_1: session_id_1,
-                    session_id_2: session_id_2,
-                    title: title,
-                    content: content,
-                    overview: overview,
-                    joined_tags: joined_tags
+                joined_tags = document.getElementById("joined_tags")
+                var tags_error = false
+                for (let i = 0; i < tags_count; i++) {
+                    if (tags_exclusion_pattern.test(document.getElementById(`tag_input_${i + 1}`).value)) {
+                        tags_error = true;
+                    }
+                    joined_tags.value += document.getElementById(`tag_input_${i + 1}`).value//タグのidは1から数える
+                    if (i < (tags_count - 1)) { joined_tags.value += "," }//最後のタグではないなら
                 }
-                fetch("{% url 'home' %}add_comment/", {
-                    method: 'post',
-                    headers: {
-                        'Content-Type': 'application/json',//JSON形式のデータのヘッダー
-                        "X-CSRFToken": csrftoken
-                    },
-                    body: JSON.stringify(request_json_data)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data["result"] == "success") {
-                            close_comment()
-                            open_comment(parent_content_id)
+                if (tags_error) {
+                    alert("タグに,と全角半角の空白は使用できません")
+                    joined_tags.value = ""
+                }
+                else {
+                    post_processing_flag = true
+                    let formData = new FormData()
+                    request_json_data = {
+                        session_id_1: session_id_1,
+                        session_id_2: session_id_2,
+                        title: title,
+                        content: content,
+                        overview: overview,
+                        joined_tags: joined_tags.value,
+                        image_count: String(image_count)
+                    }
+                    formData.append('json', new Blob([JSON.stringify(request_json_data)], { type: 'application/json' }))
+                    if (image_count == 0) {
+                        fetch("{% url 'home' %}post/process/", {
+                            method: 'POST',
+                            headers: {
+                                "X-CSRFToken": csrftoken
+                            },
+                            body: formData
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data["result"] == "success") {
+                                    posted_flag = true
+                                    location.href = (`{% url 'home' %}post/${data["content_id"]}`)
+                                }
+                                else if (data["result"] == "title_overlap") {
+                                    alert("既に同じタイトルの投稿が存在します\nタイトルを変えてください")
+                                    post_processing_flag = false
+                                }
+                                else {
+                                    alert("エラー1873912381279\nページを再読み込みします")
+                                    window.location.reload(true)
+                                }
+                            })
+                    }
+                    else {
+                        let image_read_count = 0
+                        for (let i = 0; i < image_count; i++) {
+                            let image_reader = new FileReader()
+                            image_reader.onload = function (event) {
+                                let imageBlob = new Blob([event.target.result], { type: image_list[i].type })
+                                formData.append(`image_file_${i + 1}`, imageBlob)
+                                image_read_count++
+                                if (image_read_count == image_count) {
+
+                                    fetch("{% url 'home' %}post/process/", {
+                                        method: 'POST',
+                                        headers: {
+                                            "X-CSRFToken": csrftoken
+                                        },
+                                        body: formData
+                                    })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data["result"] == "success") {
+                                                posted_flag = true
+                                                location.href = (`{% url 'home' %}post/${data["content_id"]}`)
+                                            }
+                                            else if (data["result"] == "title_overlap") {
+                                                alert("既に同じタイトルの投稿が存在します\nタイトルを変えてください")
+                                                post_processing_flag = false
+                                            }
+                                            else {
+                                                alert("エラー1873912381279\nページを再読み込みします")
+                                                window.location.reload(true)
+                                                post_processing_flag = false
+                                            }
+                                        })
+                                }
+
+                            }
+                            image_reader.readAsArrayBuffer(image_list[i])
                         }
-                        else if (data["result"] == "title_overlap") {
-                            alert("既に同じタイトルの投稿が存在します\nタイトルを変えてください")
-                        }
-                    })
-                joined_tags.value = ""//謎のタグが何回も追加されるバグ対策
+                    }
+                    joined_tags.value = ""//謎のタグが何回も追加されるバグ対策
+                }
             }
         }
+        else {
+            alert("投稿処理中です")
+        }
+    }
+
+    const content_image_input_box = document.getElementById("content_image_input_box")
+    function constant_loop() {
+        set_image_input_position()
+        requestAnimationFrame(constant_loop);
+    }
+
+    constant_loop()
+
+    function set_image_input_position() {
+        try {
+            let content_textarea_box_y_pos_top = content_textarea_box.getBoundingClientRect().top
+            let content_textarea_box_y_pos_bottom = content_textarea_box.getBoundingClientRect().bottom
+            let image_input_y_pos_top = content_image_input_box.getBoundingClientRect().top
+            let image_input_y_pos_bottom = content_image_input_box.getBoundingClientRect().bottom
+            image_input_y_pos_top = content_image_input_box.getBoundingClientRect().top
+            image_input_y_pos_bottom = content_image_input_box.getBoundingClientRect().bottom
+            let scrolly = main_middle.scrollTop
+            if (image_input_y_pos_top < content_textarea_box_y_pos_top && false) {
+                content_image_input_box.style.top = "0px"
+            }
+            else {
+                content_image_input_box.style.top = `${scrolly}px`
+            }
+
+
+        } catch (error) {
+            alert(error)
+        }
+
     }
 </script>
-</div>
 
 {% endblock %}

@@ -1,81 +1,165 @@
 {% load static %}
-
 <!doctype html>
 <html lang="ja">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" type="text/css" href="{% static 'myapp/css/style.css' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'myapp/favicon.ico' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'myapp/css/style_desktop.css' %}">
   {% block head %}{% endblock %}
+  <title>{% block title %}{% endblock %} | kachi-xtu</title>
+
+  <form>{% csrf_token %}
+  </form>
+  <form id="report_form_base" action="{% url 'home' %}report/" method="GET">{% csrf_token %}
+    <input id="report_subject_category_base" type="hidden" name="subject_category" form="report_form_base" value="post" />
+    <input id="report_subject_id_base" type="hidden" name="subject_id" form="report_form_base" value="1" />
+  </form>
 </head>
 
 <body id="main_body">
-  <header id="site-title">
-    <div class="site_header">
-      <div class="header_image">
-        <a class="header_image" href="exp://efdpmr8-anonymous-8081.exp.direct">
-          <img class="header_image" src="/media/test_logo.png" alt="header">
-        </a>
-      </div>
-      <div class="header_search_box" id="header_search_box">
-        <input class="header_search_input" id="header_search_input" type="text" form="header_search_form"
-          placeholder="検索ワードを入力">
-        <form id="header_search_form" action="{% url 'home' %}search/" method="GET">{% csrf_token %}
-          <input type="hidden" name="page_number" form="header_search_form" value="1" />
-        </form>
-      </div>
-      <div class="to_write_page">
-        <a class="to_write_page" style="text-decoration:none;" href="{% url 'home' %}post/">
-          投稿
-        </a>
-      </div>
-      <div class="branch_out_by_login">
-        <div class="to_login_page" id="to_login_page">
-          <a style="text-decoration:none;" href="{% url 'home' %}login/">
-            login
-          </a>
-          <a style="text-decoration:none;" href="{% url 'home' %}signup/">
-            登録
-          </a>
-        </div>
-        <div class="to_mypage_link" id="to_mypage_box">
-          <a id="to_mypage_box_link" class="to_mypage_link" href="{% url 'home' %}mypage/">
-            ホーム
-          </a>
-          <a id="to_mypage_box_link" href="{% url 'home' %}mypage/">
-            <img class="icon_mini" src="/media/user_icons/user_icon_mini_{{user_id}}.png" alt="icon">
-          </a>
-        </div>
-      </div>
-      <div class="to_seting_page">
-        seting{{user_id}}
-      </div>
-      <script>//競合回避のため全ての変数の末尾に_baseを付ける
-        var user_id_base = Number("{{user_id}}");
-        const link_to_login_page_base = document.getElementById("to_login_page");
-        const link_to_mypage_base = document.getElementById("to_mypage_box");
-        if (user_id_base <= 0) {
-          link_to_mypage_base.classList.add("hidden")
-        } else {
-          link_to_login_page_base.classList.add("hidden")
-        }
-      </script>
-    </div>
-  </header>
   <div class="parent_box">
+    <div class="sub_left" id="sub_left">
+      <header id="site-title">
+        {% block header %}{% endblock %}
+        <div class="site_header">
+          <div style="display: none;" class="header_text_box">
+            <a class="header_text_box" href="{% url 'home' %}">
+              <div class="header_text">Kachi-xtu</div>
+            </a>
+          </div>
+
+          <a href="{% url 'home' %}search/">
+            <div class="header_option" style="left: 0%;">
+              <svg role="img" xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6"
+                style="position: absolute; top: 0px; left: calc(50% - 30px);">
+                <title id="searchIconTitle">検索</title>
+                <path d="M14.4121122,14.4121122 L20,20" />
+                <circle cx="10" cy="10" r="6" />
+              </svg>
+              <div class="header_option_bottom_text">検索</div>
+            </div>
+          </a>
+
+          <a href="{% url 'post' %}">
+            <div id="to_post_page" class="header_option" style="left: 25%;">
+              <svg role="img" xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6"
+                style="position: absolute; top: 0px; left: calc(50% - 30px);">
+                <title id="editIconTitle">投稿</title>
+                <path
+                  d="M18.4142136 4.41421356L19.5857864 5.58578644C20.366835 6.36683502 20.366835 7.63316498 19.5857864 8.41421356L8 20 4 20 4 16 15.5857864 4.41421356C16.366835 3.63316498 17.633165 3.63316498 18.4142136 4.41421356zM14 6L18 10" />
+              </svg>
+              <div class="header_option_bottom_text">投稿</div>
+            </div>
+          </a>
+
+          <a id="to_notification_box" href="{% url 'notification_page' %}">
+            <div class="header_option" style="left: 50%;">
+              <svg role="img" xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6"
+                style="position: absolute; top: 0px; left: calc(50% - 30px);">
+                <title id="bellIconTitle">通知</title>
+                <path stroke-linejoin="round"
+                  d="M10.5,4.5 C12.1666667,4.5 13.8333333,4.5 15.5,4.5 C17.5,4.5 18.8333333,3.83333333 19.5,2.5 L19.5,18.5 C18.8333333,17.1666667 17.5,16.5 15.5,16.5 C13.8333333,16.5 12.1666667,16.5 10.5,16.5 L10.5,16.5 C7.1862915,16.5 4.5,13.8137085 4.5,10.5 L4.5,10.5 C4.5,7.1862915 7.1862915,4.5 10.5,4.5 Z"
+                  transform="rotate(90 12 10.5)" />
+                <path d="M11,21 C12.1045695,21 13,20.1045695 13,19 C13,17.8954305 12.1045695,17 11,17"
+                  transform="rotate(90 12 19)" />
+              </svg>
+              <svg id="no_read_notification_svg" style="display: none;position: absolute;left:calc(47.5% + 0px);"
+                role="img" xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#ffaf00" stroke-width="2" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6">
+                <title id="bellIconTitle">未読の通知が存在します</title>
+                <Circle cx=15px cy=15px r=7.5px fill="#ffaf00" />
+              </svg>
+              <script>
+                if ("{{unread_notification_flag}}" == "y") {
+                  document.getElementById("no_read_notification_svg").style.display = "inline"
+                }
+              </script>
+              <div class="header_option_bottom_text">通知</div>
+            </div>
+          </a>
+
+          <a id="to_mypage_box" href="{% url 'home' %}mypage/">
+            <div class="header_option" style="left: 75%;">
+              <img class="icon_mini" style="height: 80px; width: 80px; margin-top: 0px;"
+                src="/media/user_icons/user_icon_mini_{{user_id}}.png" alt="icon">
+            </div>
+          </a>
+
+          <a id="to_top_page" href="{% url 'home' %}">
+            <div class="header_option" style="left: 25%;">
+              <svg role="img" xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 24 24"
+                aria-labelledby="bellIconTitle" stroke="#5a9fa6" stroke-width="1.5" stroke-linecap="square"
+                stroke-linejoin="miter" fill="none" color="#5a9fa6"
+                style="position: absolute; top: 0px; left: calc(50% - 30px);">
+                <title id="homeAlt2IconTitle">Home</title>
+                <path d="M2 12L5 9.3M22 12L19 9.3M19 9.3L12 3L5 9.3M19 9.3V21H5V9.3" />
+                <rect width="6" height="8" x="9" y="13" />
+              </svg>
+              <div class="header_option_bottom_text">トップ</div>
+            </div>
+          </a>
+
+          <a id="to_signup_page" href="{% url 'signup' %}">
+            <div class="header_option" style="left: 50%;">
+              <div class="to_signup_page">
+                登録
+              </div>
+            </div>
+          </a>
+
+          <a id="to_login_page" style="text-decoration:none;" href="{% url 'login_page' %}">
+            <div class="header_option" style="left: 75%;">
+              <div class="to_login_page">
+                ログイン
+              </div>
+            </div>
+          </a>
+      </header>
+      <div class="sub_left_content">
+        {% block sub_left %}{% endblock %}
+        <div id="out_of_main_box" class="out_of_main_box" style="display: none;">
+          {% block out_of_box %}{% endblock %}
+        </div>
+      </div>
+    </div>
     <div class="main_middle" id="main_middle">
       {% block content %}{% endblock %}
     </div>
-    <div class="sub_left" id="sub_left">
-      {% block sub_left %}{% endblock %}
-    </div>
-    <div class="sub_right" id="sub_right">
-      {% block sub_right %}{% endblock %}
-    </div>
   </div>
-  {% block out_of_box %}{% endblock %}
+
+  <footer>
+
+  </footer>
 </body>
-{% block script %}{% endblock %}
+<script>
+  var username_exclusion_pattern = />|<| |　|\u200b|&gt;|&lt;|,|\n|\r|\t/g
+  var mailaddress_pattern =
+    /^[a-zA-Z0-9_+-]+(.[a-zA-Z0-9_+-]+)*@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}/;
+  var password_pattern =
+    /^(([a-zA-Z0-9]|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\_|\+|\-|\=|\[|\]|\{|\}|\||\;|\:|\'|\,|\.|\<|\>|\?|\/|\~|\`)+)$/;
+  var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+  var site_url = `{% url 'home' %}`//外部スクリプトで読み込むよう
+  var my_user_id = Number("{{user_id}}");
+  if (my_user_id <= 0) {
+    document.getElementById("to_post_page").classList.add("hidden")
+    document.getElementById("to_notification_box").classList.add("hidden")
+    document.getElementById("to_mypage_box").classList.add("hidden")
+  } else {
+    document.getElementById("to_top_page").classList.add("hidden")
+    document.getElementById("to_login_page").classList.add("hidden")
+    document.getElementById("to_signup_page").classList.add("hidden")
+  }
+</script>
+{% block script %}
+{% endblock %}
 
 </html>

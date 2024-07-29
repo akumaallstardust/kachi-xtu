@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-urlpatterns = [#仮のやつ、あとで戻す
+urlpatterns_kari = [#仮のやつ、あとで戻す
     path('', views.cccontact, name='home'),
     #path('', views.index, name='home'),
     
@@ -93,8 +93,8 @@ urlpatterns = [#仮のやつ、あとで戻す
     
     path('collect_error/', views.collect_error, name='collect_error'),
 ]
-urlpatterns_honnrai = [
-    path('', views.cccontact, name='home'),
+urlpatterns = [
+    path('', views.index, name='home'),
     
     path('error/', views.unauthorized_request, name='unauthorized_request'),
     
@@ -106,14 +106,15 @@ urlpatterns_honnrai = [
     
     path('post/', views.post, name='post'),
     path('post/<int:content_id>/', views.display_post, name='display_post'),
-    
-    path('post/option/', views.display_post_with_option, name='views.display_post_with_option'),
+    path('post/<str:option>/', views.display_post_with_option, name='display_post_with_option'),
     
     path('signup/', views.signup, name='signup'),
+    path('signup/true/', views.true_signup_page, name='true_signup_page'),
     path('signup/process/', views.signup_process, name='signup_process'),
     path('signup/process/app/', views.signup_process_app, name='signup_process_app'),
     
     path('true_signup/', views.true_signup, name='true_signup'),
+    path('true_signup_web/', views.true_signup_web, name='true_signup_web'),
     
     path('login/', views.login_page, name='login_page'),
     path('login_process/', views.login_process, name='login_process'),
@@ -131,9 +132,11 @@ urlpatterns_honnrai = [
     path('changepassword/', views.change_password, name='change_password'),
     path('changepassword/process/', views.change_password_process, name='change_password_process'),
     path('changepassword/process/app/', views.change_password_process_app, name='change_password_process_app'),
-    path('changepassword/success/', views.change_password_success, name='change_password_success'),
     
     path('search/', views.search, name='search'),
+    
+    path('get_post/<str:subject>/', views.get_post_for_web, name='get_post'),
+    
     path('user/<int:owner_user_id>/', views.user_page, name='user_page'),
     
     path('notification/', views.notification_page, name='notification_page'),
@@ -177,11 +180,11 @@ urlpatterns_honnrai = [
     path('deleteaccount/process/app/', views.delete_user_process_app, name='delete_user_process'),
     
     path('test/', views.test, name='test'),
-    path('tekitou/', views.tekitou, name='tekitou'),
+    path('cccontact/', views.cccontact, name='cccontact'),
     
     path('riyouki/', views.any_text, name='riyouki'),
     
     path('anytext/<str:item>/', views.any_text, name='aaa'),
  
-    path('collect_error/', views.collect_error, name='collect_error'),   
+    path('collect_error/', views.collect_error, name='collect_error'),
 ]

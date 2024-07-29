@@ -3,18 +3,15 @@
 <!---->
 {% load static %}
 <!--<-->
+{% block title %}
+閲覧履歴
+{% endblock %}
 {% block content %}
 <h3>
     閲覧履歴
 </h3>
 {% endblock %}
 {% block out_of_box %}
-
-<div id="gray_out_search_page" class="gray_out_search_page" style="display: none;">
-    <div id="discussion_box" class="discussion_box" style="display: none;">
-
-    </div>
-</div>
 <form id="report_form" action="{% url 'home' %}report/" method="GET">{% csrf_token %}
     <input id="report_subject_category" type="hidden" name="subject_category" form="report_form" value="post" />
     <input id="report_subject_id" type="hidden" name="subject_id" form="report_form" value="1" />
@@ -26,7 +23,7 @@
 <script>
     const main_middle = document.getElementById("main_middle")
     main_middle.classList.add("main_middle_serach")
-    const gray_out_search_page = document.getElementById("gray_out_search_page")
+    const gray_out_out_of_main = document.getElementById("gray_out_out_of_main")
     function add_br(el, br_conut = 1) {
         for (let i = 0; i < br_conut; i++) {
             let new_br = document.createElement("br")
@@ -48,7 +45,6 @@
     }
     const user_id = Number(`{{user_id}}`)
     const username = `{{username}}`
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
     const session_id_key_1 = 'session_id_1'
     const session_id_key_2 = 'session_id_2'
     /// 正規表現でcookie値を取得
@@ -87,6 +83,7 @@
     let like_counts_list = `{{like_counts_combined}}`.split("<")
     let dislike_counts_list = `{{dislike_counts_combined}}`.split("<")
     let post_date_list = `{{post_date_combined}}`.split("<")
+    let comment_count_list = `{{comment_count_combined}}`.split("<")
     let post_dict_list = []
     for (let i = 0; i < dieplayed_post_number; i++) {
         post_dict_list[i] = {
@@ -101,6 +98,7 @@
             my_review: my_review_list[i],
             like_count: Number(like_counts_list[i]),
             dislike_count: Number(dislike_counts_list[i]),
+            comment_count: Number(comment_count_list[i])
         }
     }
 
@@ -161,10 +159,10 @@
         }
         
         for (let i = 0; i < dieplayed_post_number; i++) {
-            post_box_list[i] = new post_moblie(
+            post_box_list[i] = new post_component(
                 {
                     display_delete_post_button: false,
-                    out_of_main: document.getElementById("gray_out_search_page"),
+                    out_of_main: document.getElementById("gray_out_out_of_main"),
                 },
                 main_middle,
                 post_dict_list[i]

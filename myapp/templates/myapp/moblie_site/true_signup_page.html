@@ -1,0 +1,82 @@
+{% extends 'myapp/moblie_site/base.html' %}
+<!---->
+{% load static %}
+<!--<-->
+{% block title %}
+本登録
+{% endblock %}
+
+
+{% block content %}
+<div class="gray_out_login_page">
+    <div class="login_box">
+        <div class="H3_login_box">
+            <h3 class="H3_login">本登録</h3>
+        </div>
+        <div class="mailaddress_input_box">
+
+            <input class="mailaddress_input" id="mailaddress_input" type="email" name="mailaddress" form="send"
+                maxlength="255" size="40" placeholder="メールアドレス" />
+        </div>
+        <div class="password_input_box" style="margin-top: 0;">
+            <input class="password_input" id="password_input" type="password" name="password" form="send"
+                maxlength="255" size="40" placeholder="パスワード" />
+        </div>
+        <div class="password_input_box" style="margin-top: 0;">
+            <input class="password_input" id="password_input_2" type="password" name="password" form="send"
+                maxlength="255" size="40" placeholder="パスワード(確認)" />
+        </div>
+        <button class="Login_button" type="button" onclick="submit_user_data()">本登録</button>
+    </div>
+</div>
+{% endblock %}
+{% block script %}
+<script src="{% static 'myapp/scripts/parts.js' %}"></script>
+<script>
+    document.getElementById("password_input").addEventListener("input", () => {
+        if (password_pattern.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value != "") {
+            alert("パスワードに使用可能な文字は英数字と!@#$%^&*()_+-=[]{}|;:',.<>?/~`のみです")
+            document.getElementById("password_input").value = ""
+        }
+    })
+    function submit_user_data() {
+        let mailaddress = document.getElementById("mailaddress_input").value
+        let password = document.getElementById("password_input").value
+        if (mailaddress_pattern.test(mailaddress) == false) { alert("メールアドレスが不正です") }//文字数チェックも含む
+        else if (password.length == 0) { alert("パスワードを入力してください") }
+        else if (password_pattern.test(password) == false) { alert("パスワードに使用可能な文字は英数字と!@#$%^&*()_+-=[]{}|;:',.<>?/~`のみです") }
+        else if(password!=document.getElementById("password_input_2").value){
+            alert("確認用パスワードが間違っています")
+        }
+        else {
+
+            let request_json_data = {
+                password: password,
+                mailaddress: mailaddress,
+            }
+            fetch("{% url 'true_signup_web' %}", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["result"] == "success") {
+                        alert("本登録に成功しました")
+                        location.href = ("{% url 'home' %}mypage/")
+                    }
+                    else if (data["result"] == "request_broken_error") {
+                        alert("通信エラー\nもう一度送信してください")
+                    }
+                    else if (data["result"] == "mailaddress_overlap") {
+                        alert("このメールアドレスはすでに使用されています\n別のものに変えてください")
+                    }
+                })
+        }
+    }
+
+</script>
+{% endblock %}

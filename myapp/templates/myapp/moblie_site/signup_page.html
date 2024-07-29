@@ -1,26 +1,37 @@
 {% extends 'myapp/moblie_site/base.html' %}
+<!---->
+{% load static %}
+<!--<-->
+{% block title %}
+登録
+{% endblock %}
+
 
 {% block content %}
 <div class="gray_out_login_page">
     <div class="login_box">
-
-        <div class="username_input_box" style="margin-top: 5vh;">
-            <h3 style="margin-top: 3vw; margin-bottom: 4vw;">ユーザー登録</h3>
-            <input class="mailaddress_input" id="username_input" id="username_input" type="text"
-                name="username" form="signup_form" maxlength="30" size="25" placeholder="ニックネーム"/>
+        <div class="H3_login_box">
+            <h3 class="H3_login">ユーザー登録</h3>
         </div>
-        <div class="mailaddress_input_box" style="margin-top: 3vh;">
-            
+        <div class="username_input_box">
+            <input class="username_input" id="username_input" id="username_input" type="text" name="username"
+                form="signup_form" maxlength="30" size="25" placeholder="ニックネーム" />
+        </div>
+        <div class="mailaddress_input_box">
+
             <input class="mailaddress_input" id="mailaddress_input" type="email" name="mailaddress" form="send"
                 maxlength="255" size="40" placeholder="メールアドレス" />
         </div>
-        <div class="password_input_box" style="margin-top: 3vh;">
+        <div class="password_input_box" style="margin-top: 0;">
             <input class="password_input" id="password_input" type="password" name="password" form="send"
                 maxlength="255" size="40" placeholder="パスワード" />
-        </div><br>
-        <a  href="{% url 'home' %}anytext/riyouki/"><div class="riyouki_link">利用規約</div></a>
-        <button style="width: 40vw;margin-top: 3vw;" class="general_button_large" type="button"
-            onclick="submit_user_data()">登録</button>
+        </div>
+
+        <div class="riyouki_link">
+            <a class="riyouki_link" href="{% url 'home' %}anytext/riyouki/">利用規約</a>
+        </div>
+        <button class="Login_button" type="button"
+            onclick="submit_user_data()">利用規約に同意して登録</button>
 
 
         <a href="{% url 'home' %}login/">
@@ -28,23 +39,23 @@
                 ログインはこちら
             </div>
         </a>
-
     </div>
 </div>
 {% endblock %}
 {% block script %}
+<script src="{% static 'myapp/scripts/parts.js' %}"></script>
 <script>
-    const username_input= document.getElementById("username_input")
+    const username_input = document.getElementById("username_input")
     username_input.addEventListener("input", () => {
         let censored_text = username_input.value.replace(/</g, "＜")
         censored_text = censored_text.replace(/>/g, "＞")
         censored_text = censored_text.replace(/\n/g, "")
         censored_text = censored_text.replace(/\r/g, "")
         censored_text = censored_text.replace(username_exclusion_pattern, "")
-            username_input.value=censored_text
+        username_input.value = censored_text
     })
     document.getElementById("password_input").addEventListener("input", () => {
-        if (password_pattern.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value!="") {
+        if (password_pattern.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value != "") {
             alert("パスワードに使用可能な文字は英数字と_?!#`$のみです")
             document.getElementById("password_input").value = ""
         }
@@ -59,7 +70,7 @@
         else if (password.length == 0) { alert("パスワードを入力してください") }
         else if (password_pattern.test(password) == false) { alert("パスワードに使用可能な文字は英数字と!@#$%^&*()_+-=[]{}|;:',.<>?/~`のみです") }
         else {
-            
+
             let request_json_data = {
                 password: password,
                 username: username,

@@ -1,0 +1,7 @@
+<svg role="img" xmlns="http://www.w3.org/2000/svg" width="33px" height="33px" viewBox="0 0 24 24"
+    aria-labelledby="高評価" stroke="#5a9fa6" stroke-width="2" stroke-linecap="square"
+    stroke-linejoin="miter" fill="none" color="#2329D6">
+    <title id="okIconTitle">高評価</title>
+    <path
+        d="M8 8.74a2 2 0 0 1 .481-1.302l4.791-5.59A1.432 1.432 0 0 1 15 1.5c.574.287.85.952.646 1.56L14 8h4.604a2 2 0 0 1 1.967 2.358l-1.272 7A2 2 0 0 1 17.33 19H10a2 2 0 0 1-2-2V8.74ZM4 18V9" />
+</svg>

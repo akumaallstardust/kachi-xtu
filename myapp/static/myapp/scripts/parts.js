@@ -1,4 +1,9 @@
 var content_exclusion_pattern = /(<|>|\u200b|\t|\&lt|\&gt)+/g;
+var username_exclusion_pattern = />|<| |　|\u200b|&gt;|&lt;|,|\n|\r|\t/g;
+var mailaddress_pattern =
+  /^[a-zA-Z0-9_+-]+(.[a-zA-Z0-9_+-]+)*@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}/;
+var password_pattern =
+  /^(([a-zA-Z0-9]|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\_|\+|\-|\=|\[|\]|\{|\}|\||\;|\:|\'|\,|\.|\<|\>|\?|\/|\~|\`)+)$/;
 function censor_content(text) {
   let censored_text = text.replace(/</g, "＜");
   censored_text = censored_text.replace(/>/g, "＞");
@@ -26,17 +31,17 @@ function convertStringsToNumbers(array) {
 function split_less_than(text) {
   return text == "" ? [] : text.split("<");
 }
-var username_exclusion_pattern = />|<| |　|\u200b|&gt;|&lt;|,|\n|\r|\t/g
-var mailaddress_patteen =
+var username_exclusion_pattern = />|<| |　|\u200b|&gt;|&lt;|,|\n|\r|\t/g;
+var mailaddress_pattern =
   /^[a-zA-Z0-9_+-]+(.[a-zA-Z0-9_+-]+)*@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}/;
-var password_patteen =
+var password_pattern =
   /^(([a-zA-Z0-9]|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\_|\+|\-|\=|\[|\]|\{|\}|\||\;|\:|\'|\,|\.|\<|\>|\?|\/|\~|\`)+)$/;
 
-class post_moblie {
+class post_component {
   constructor(
     {
       display_delete_post_button = false,
-      gray_out = document.getElementById("gray_out_search_page"),
+      out_of_main_box = document.getElementById("out_of_main_box"),
       uni_post = false,
       option_category = "",
       subject_id = 0,
@@ -57,10 +62,11 @@ class post_moblie {
     this.my_review = post_dict["my_review"];
     this.like_count = Number(post_dict["like_count"]);
     this.dislike_count = Number(post_dict["dislike_count"]);
+    this.comment_count = Number(post_dict["comment_count"]);
     this.already_viewed_flag = false;
     this.content_open_flag = false;
     this.discussion_box_open_flag = false;
-    this.gray_out = gray_out;
+    this.out_of_main_box = out_of_main_box;
 
     this.post_box = document.createElement("div");
     this.post_box.id = `listed_post_${this.content_id}`;
@@ -84,7 +90,7 @@ class post_moblie {
     this.listed_post_icon.id = `listed_post_icon_${this.content_id}`;
     this.listed_post_icon.classList.add("listed_post_icon");
     this.listed_post_icon.href = site_url + `user/${this.user_id}/`;
-    this.listed_post_icon.innerHTML = `<img class="icon_mini" src="/media/user_icons/user_icon_mini_${this.user_id}.png" alt="icon">`;
+    this.listed_post_icon.innerHTML = `<img class="listed_post_icon" src="/media/user_icons/user_icon_mini_${this.user_id}.png" alt="icon">`;
     this.listed_post_icon_box.appendChild(this.listed_post_icon);
 
     this.listed_post_username = document.createElement("a");
@@ -119,6 +125,15 @@ class post_moblie {
       this.post_overview_box.appendChild(this.post_overview);
     }
 
+    this.open_content_button = document.createElement("button");
+    this.open_content_button.id = `open_content_button_${this.content_id}`;
+    this.open_content_button.classList.add("open_content_button");
+    this.open_content_button.textContent = "読む";
+    this.post_box.appendChild(this.open_content_button);
+    this.open_content_button.addEventListener("click", () => {
+      this.open_content();
+    });
+
     this.post_content_box = document.createElement("div");
     this.post_content_box.id = `listed_post_content_box_${this.content_id}`;
     this.post_content_box.className = "post_content_box";
@@ -142,20 +157,20 @@ class post_moblie {
       this.post_box.appendChild(this.content_button_box);
     }
 
-    this.like_button_box = document.createElement("div");
+    this.like_button_box = document.createElement("button");
     this.like_button_box.id = `like_button_box_${this.content_id}`;
     this.like_button_box.classList.add("like_button_box");
     this.content_button_box.appendChild(this.like_button_box);
+    this.like_button_box.addEventListener("click", () => {
+      this.add_review("add_like");
+    });
 
-    this.like_button = document.createElement("button");
+    this.like_button = document.createElement("div");
     this.like_button.id = `like_button_${this.content_id}`;
     this.like_button.classList.add("like_button");
     this.like_button_box.appendChild(this.like_button);
     this.like_button.type = "button";
     this.like_button.title = "高評価";
-    this.like_button.addEventListener("click", () => {
-      this.add_review("add_like");
-    });
 
     this.like_button_img = document.createElement("img");
     this.like_button_img.id = `like_button_img_${this.content_id}`;
@@ -163,9 +178,9 @@ class post_moblie {
     this.like_button_img.classList.add("like_button");
     this.like_button.appendChild(this.like_button_img);
     if (this.my_review == "liked") {
-      this.like_button_img.src = "/media/like_button_liked.png";
+      this.like_button_img.src = "/media/like_button_liked.svg";
     } else {
-      this.like_button_img.src = "/media/like_button_normal.png";
+      this.like_button_img.src = "/media/like_button_normal.svg";
     }
 
     this.like_count_text = document.createElement("div");
@@ -174,20 +189,20 @@ class post_moblie {
     this.like_count_text.textContent = String(this.like_count);
     this.like_button_box.appendChild(this.like_count_text);
 
-    this.dislike_button_box = document.createElement("div");
+    this.dislike_button_box = document.createElement("button");
     this.dislike_button_box.id = `dislike_button_box_${this.content_id}`;
     this.dislike_button_box.classList.add("dislike_button_box");
     this.content_button_box.appendChild(this.dislike_button_box);
+    this.dislike_button_box.addEventListener("click", () => {
+      this.add_review("add_dislike");
+    });
 
-    this.dislike_button = document.createElement("disbutton");
+    this.dislike_button = document.createElement("div");
     this.dislike_button.id = `dislike_button_${this.content_id}`;
     this.dislike_button.classList.add("dislike_button");
     this.dislike_button_box.appendChild(this.dislike_button);
     this.dislike_button.type = "button";
     this.dislike_button.title = "低評価";
-    this.dislike_button.addEventListener("click", () => {
-      this.add_review("add_dislike");
-    });
 
     this.dislike_button_img = document.createElement("img");
     this.dislike_button_img.id = `dislike_button_img_${this.content_id}`;
@@ -195,9 +210,9 @@ class post_moblie {
     this.dislike_button_img.classList.add("dislike_button");
     this.dislike_button.appendChild(this.dislike_button_img);
     if (this.my_review == "disliked") {
-      this.dislike_button_img.src = "/media/dislike_button_disliked.png";
+      this.dislike_button_img.src = "/media/dislike_button_disliked.svg";
     } else {
-      this.dislike_button_img.src = "/media/dislike_button_normal.png";
+      this.dislike_button_img.src = "/media/dislike_button_normal.svg";
     }
 
     this.dislike_count_text = document.createElement("div");
@@ -206,27 +221,20 @@ class post_moblie {
     this.dislike_count_text.textContent = String(this.dislike_count);
     this.dislike_button_box.appendChild(this.dislike_count_text);
 
-    this.open_comment_button_box = document.createElement("div");
-    this.open_comment_button_box.id = `open_comment_button_box_${this.content_id}`;
-    this.open_comment_button_box.classList.add("open_comment_button_box");
     this.open_comment_button = document.createElement("button");
     this.open_comment_button.id = `open_comment_button_${this.content_id}`;
     this.open_comment_button.classList.add("open_comment_button");
-    this.open_comment_button.textContent = "コメント";
+    this.open_comment_button.textContent = `コメント${
+      this.comment_count == 0 ? "" : `(${this.comment_count})`
+    }`;
     this.open_comment_button.type = "button";
     this.open_comment_button.title = "コメントを開く";
     this.open_comment_button.addEventListener("click", () => {
       this.open_comment();
     });
-    this.content_button_box.appendChild(this.open_comment_button_box);
-    this.open_comment_button_box.appendChild(this.open_comment_button);
+    this.content_button_box.appendChild(this.open_comment_button);
 
     if (display_delete_post_button) {
-      this.delete_button_box = document.createElement("div");
-      this.delete_button_box.id = `delete_button_box_${this.content_id}`;
-      this.delete_button_box.classList.add("delete_post_button_box");
-      this.content_button_box.appendChild(this.delete_button_box);
-
       this.delete_button = document.createElement("button");
       this.delete_button.id = `delete_button_${this.content_id}`;
       this.delete_button.classList.add("delete_post_button");
@@ -260,26 +268,21 @@ class post_moblie {
             });
         }
       });
-      this.delete_button_box.appendChild(this.delete_button);
+      this.content_button_box.appendChild(this.delete_button);
     } else {
-      this.report_button_box = document.createElement("div");
-      this.report_button_box.id = `report_button_box_${this.content_id}`;
-      this.report_button_box.classList.add("report_button_box");
-      this.content_button_box.appendChild(this.report_button_box);
-
       this.report_button = document.createElement("button");
       this.report_button.id = `report_button_${this.content_id}`;
       this.report_button.classList.add("report_button");
       this.report_button.textContent = "通報";
       this.report_button.title = "通報";
       this.report_button.addEventListener("click", () => {
-        document.getElementById("report_subject_category").value = "post";
-        document.getElementById("report_subject_id").value = String(
+        document.getElementById("report_subject_category_base").value = "post";
+        document.getElementById("report_subject_id_base").value = String(
           this.content_id
         );
-        document.getElementById("report_form").submit();
+        document.getElementById("report_form_base").submit();
       });
-      this.report_button_box.appendChild(this.report_button);
+      this.content_button_box.appendChild(this.report_button);
     }
     if (this.tags != "") {
       this.post_tags_box = document.createElement("div");
@@ -308,20 +311,9 @@ class post_moblie {
         this.post_tag_box_list[j].appendChild(this.post_tag_list[j]);
       }
     }
-    this.open_content_button_box = document.createElement("div");
-    this.open_content_button_box.classList.add("open_content_button_box");
-    this.open_content_button = document.createElement("button");
-    this.open_content_button.id = `open_content_button_${this.content_id}`;
-    this.open_content_button.classList.add("open_content_button");
-    this.open_content_button.textContent = "読む";
-    this.post_box.appendChild(this.open_content_button_box);
-    this.open_content_button_box.appendChild(this.open_content_button);
-    this.open_content_button.addEventListener("click", () => {
-      this.open_content();
-    });
     if (this.uni_post) {
-      this.post_box.style.marginTop = "3vw";
-      this.open_content_button_box.style.display = "none";
+      this.post_box.style.marginTop = "15px";
+      this.open_content_button.style.display = "none";
       this.post_content.style.borderTopWidth = "0px";
       this.open_content();
       if (option_category != "") {
@@ -343,6 +335,7 @@ class post_moblie {
                 i = this.parent_comment_list.length;
               }
             }
+          } else if ("just_open_comment") {
           }
           this.move_to_comment(open_comment_id);
         });
@@ -350,7 +343,7 @@ class post_moblie {
     }
   }
   post_comment(parent_comment_id = 0, comment_content) {
-    if (user_id <= 0) {
+    if (my_user_id <= 0) {
       location.href = site_url + `signup/`;
     }
     if (comment_content != "") {
@@ -407,26 +400,26 @@ class post_moblie {
 
         let comment_username_text_link = document.createElement("a");
         comment_username_text_link.classList.add("comment_username");
-        comment_username_text_link.href =
-          site_url + `user/${comment_user_id}/`;
+        comment_username_text_link.href = site_url + `user/${comment_user_id}/`;
         comment_username_text_link.textContent = comment_username;
         comment_user_box.appendChild(comment_username_text_link);
 
         let report_comment_button_box = document.createElement("div");
         report_comment_button_box.id = `report_comment_button_box_${this.comment_id}`;
         report_comment_button_box.classList.add("report_comment_button_box");
-        this.comment_box.appendChild(report_comment_button_box);
+        comment_user_box.appendChild(report_comment_button_box);
 
         let report_comment_button = document.createElement("button");
         report_comment_button.id = `report_comment_button${this.comment_id}`;
         report_comment_button.classList.add("report_comment_button");
         report_comment_button.textContent = "通報";
         report_comment_button.addEventListener("click", () => {
-          document.getElementById("report_subject_category").value = "comment";
-          document.getElementById("report_subject_id").value = String(
+          document.getElementById("report_subject_category_base").value =
+            "comment";
+          document.getElementById("report_subject_id_base").value = String(
             this.comment_id
           );
-          document.getElementById("report_form").submit();
+          document.getElementById("report_form_base").submit();
         });
         report_comment_button_box.appendChild(report_comment_button);
 
@@ -464,41 +457,29 @@ class post_moblie {
       let comment_username_text_link = document.createElement("a");
       comment_username_text_link.id = `comment_username_${this.comment_id}`;
       comment_username_text_link.classList.add("comment_username");
-      comment_username_text_link.href =
-        site_url + `user/${comment_user_id}/`;
+      comment_username_text_link.href = site_url + `user/${comment_user_id}/`;
       comment_username_text_link.textContent = comment_username;
       comment_user_box.appendChild(comment_username_text_link);
-
-      let report_comment_button_box = document.createElement("div");
-      report_comment_button_box.id = `report_comment_button_box_${this.comment_id}`;
-      report_comment_button_box.classList.add("report_comment_button_box");
-      this.comment_box.appendChild(report_comment_button_box);
 
       let report_comment_button = document.createElement("button");
       report_comment_button.id = `report_comment_button${this.comment_id}`;
       report_comment_button.classList.add("report_comment_button");
       report_comment_button.textContent = "通報";
       report_comment_button.addEventListener("click", () => {
-        document.getElementById("report_subject_category").value = "comment";
-        document.getElementById("report_subject_id").value = String(
+        document.getElementById("report_subject_category_base").value =
+          "comment";
+        document.getElementById("report_subject_id_base").value = String(
           this.comment_id
         );
-        document.getElementById("report_form").submit();
+        document.getElementById("report_form_base").submit();
       });
-      report_comment_button_box.appendChild(report_comment_button);
+      comment_user_box.appendChild(report_comment_button);
 
       let comment_content_div = document.createElement("div");
       comment_content_div.id = `comment_content_${this.comment_id}`;
       comment_content_div.classList.add("comment_content");
       comment_content_div.innerHTML = set_text_with_newline(comment_content);
       this.comment_box.appendChild(comment_content_div);
-
-      let open_child_comment_button_box = document.createElement("div");
-      open_child_comment_button_box.id = `open_child_comment_button_box_${this.comment_id}`;
-      open_child_comment_button_box.classList.add(
-        "open_child_comment_button_box"
-      );
-      this.comment_box.appendChild(open_child_comment_button_box);
 
       this.open_child_comment_button = document.createElement("button");
       this.open_child_comment_button.type = "button";
@@ -508,7 +489,7 @@ class post_moblie {
       this.open_child_comment_button.addEventListener("click", () => {
         this.open_child_comment();
       });
-      open_child_comment_button_box.appendChild(this.open_child_comment_button);
+      this.comment_box.appendChild(this.open_child_comment_button);
 
       this.child_comment_box = document.createElement("div");
       this.child_comment_box.id = `child_comment_box_${this.comment_id}`;
@@ -529,10 +510,13 @@ class post_moblie {
 
       let add_child_comment_textarea_dummy = document.createElement("div");
       add_child_comment_textarea_dummy.id = `add_child_comment_textarea_dummy_${this.comment_id}`;
-      add_child_comment_textarea_dummy.classList.add("general_textarea_dummy");
+      add_child_comment_textarea_dummy.classList.add(
+        "add_child_comment_textarea_dummy"
+      );
       add_child_comment_textarea_box.appendChild(
         add_child_comment_textarea_dummy
       );
+      add_child_comment_textarea_dummy.style.minHeight = "65px";
 
       let add_child_comment_textarea = document.createElement("textarea");
       add_child_comment_textarea.id = `add_child_comment_textarea_${this.comment_id}`;
@@ -559,14 +543,16 @@ class post_moblie {
           .post_comment(this.comment_id, add_child_comment_textarea.value)
           .then((data) => {
             if (data["result"] == "success") {
-              this.child_comment_data_list[comment_id_list.length] = {
+              this.child_comment_data_list[
+                this.child_comment_data_list.length
+              ] = {
                 comment_id: Number(data["comment_id"]),
                 content: add_child_comment_textarea.value,
                 user_id: my_user_id,
                 username: username,
               };
               this.child_comment_list[this.child_comment_list.length] =
-                new post_moblie.parent_comment.child_comment(
+                new post_component.parent_comment.child_comment(
                   this.child_comment_box,
                   {
                     comment_id: Number(data["comment_id"]),
@@ -584,7 +570,7 @@ class post_moblie {
       if (this.child_comment_data_list.length >= 1) {
         for (let i = 0; i < this.child_comment_data_list.length; i++) {
           this.child_comment_list[i] =
-            new post_moblie.parent_comment.child_comment(
+            new post_component.parent_comment.child_comment(
               this.child_comment_box,
               this.child_comment_data_list[i]
             );
@@ -605,14 +591,19 @@ class post_moblie {
     }
   };
   close_comment() {
-    this.gray_out.style.display = "none";
+    this.out_of_main_box.style.display = "none";
     this.discussion_box_open_flag = false;
   }
   open_comment() {
     return new Promise((resolve, reject) => {
       if (this.discussion_box_open_flag == false) {
-        this.gray_out.innerHTML = ""; ///一度リセット
-
+        this.out_of_main_box.innerHTML = ""; ///一度リセット
+        this.gray_out = document.createElement("div");
+        this.gray_out.classList.add("gray_out_out_of_main");
+        this.out_of_main_box.appendChild(this.gray_out);
+        this.gray_out.addEventListener("click", () => {
+          this.close_comment();
+        });
         let request_json_data = {
           content_id: String(this.content_id),
         };
@@ -627,12 +618,17 @@ class post_moblie {
           .then((response) => response.json())
           .then((data) => {
             if (data["result"] == "success") {
+              this.out_of_main_box.style.display = "block";
+
+              this.discussion_box_box = document.createElement("div");
+              this.discussion_box_box.className = "discussion_box_box";
+              this.out_of_main_box.appendChild(this.discussion_box_box);
               this.discussion_box = document.createElement("div");
               this.discussion_box.style.display = "block";
               this.discussion_box.id = "discussion_box";
               this.discussion_box.classList.add("discussion_box");
               this.discussion_box_opened = true;
-              this.gray_out.appendChild(this.discussion_box);
+              this.discussion_box_box.appendChild(this.discussion_box);
               this.add_comment_box = document.createElement("div");
               this.add_comment_box.id = "add_comment_box";
               this.add_comment_box.classList.add("add_comment_box");
@@ -648,10 +644,10 @@ class post_moblie {
               this.add_comment_textarea_dummy = document.createElement("div");
               this.add_comment_textarea_dummy.id = "add_comment_textarea_dummy";
               this.add_comment_textarea_dummy.classList.add(
-                "general_textarea_dummy"
+                "add_child_comment_textarea_dummy"
               );
               this.add_comment_textarea_dummy.ariaHidden = "true";
-              this.add_comment_textarea_dummy.style.minHeight = "20vw";
+              this.add_comment_textarea_dummy.style.minHeight = "100px";
               this.add_comment_textarea_box.appendChild(
                 this.add_comment_textarea_dummy
               );
@@ -695,7 +691,7 @@ class post_moblie {
                         this.child_comment_open_flag_list.length
                       ] = false;
                       this.parent_comment_list.push(
-                        new post_moblie.parent_comment(
+                        new post_component.parent_comment(
                           this.content_id,
                           {
                             comment_id: Number(data["comment_id"]),
@@ -776,17 +772,17 @@ class post_moblie {
                   }
                 }
                 for (let i = 0; i < this.parent_comment_data_list.length; i++) {
-                  this.parent_comment_list[i] = new post_moblie.parent_comment(
-                    this.content_id,
-                    this.parent_comment_data_list[i],
-                    this
-                  );
+                  this.parent_comment_list[i] =
+                    new post_component.parent_comment(
+                      this.content_id,
+                      this.parent_comment_data_list[i],
+                      this
+                    );
                 }
               } else {
                 let nocomment_text_div = document.createElement("div");
                 nocomment_text_div.textContent = "まだコメントがありません";
-                nocomment_text_div.style.width = "100%";
-                nocomment_text_div.style.textAlign = "center";
+                nocomment_text_div.classList.add("no_comment_text");
                 this.discussion_box.appendChild(nocomment_text_div);
               }
               resolve({});
@@ -794,49 +790,21 @@ class post_moblie {
               alert("エラー");
             }
 
-            this.close_discussion_box_button_box =
-              document.createElement("div");
-            this.close_discussion_box_button_box.id =
-              "close_discussion_box_button_box";
-            this.close_discussion_box_button_box.classList.add(
-              "close_discussion_box_button_box"
-            );
-            this.discussion_box.appendChild(
-              this.close_discussion_box_button_box
-            );
-
             this.close_discussion_box_button = document.createElement("button");
-            this.close_discussion_box_button.id = "close_discussion_box_button";
             this.close_discussion_box_button.classList.add(
-              "close_discussion_box_button"
+              "Close_out_of_main_button"
             );
+            this.close_discussion_box_button.textContent = "閉じる";
             this.close_discussion_box_button.addEventListener("click", () => {
               this.close_comment();
             });
-            this.close_discussion_box_button_box.appendChild(
+            this.discussion_box_box.appendChild(
               this.close_discussion_box_button
             );
-
-            this.close_discussion_box_button_inside =
-              document.createElement("button");
-            this.close_discussion_box_button_inside.id =
-              "close_discussion_box_button_inside";
-            this.close_discussion_box_button_inside.classList.add(
-              "close_discussion_box_button_inside"
-            );
-            this.close_discussion_box_button_inside.textContent = "×";
-            this.close_discussion_box_button_box.appendChild(
-              this.close_discussion_box_button_inside
-            );
-            gray_out_search_page.style.display = "block";
           });
       } else {
         this.close_comment();
       }
-      // 非同期処理が成功した場合
-
-      // 非同期処理が失敗した場合
-      // reject('失敗した理由');
     });
   }
 
@@ -880,7 +848,7 @@ class post_moblie {
     }
   }
 
-  open_content(listed_content_number) {
+  open_content() {
     if (this.content_open_flag == false) {
       this.post_content_box.style.display = "block";
       this.open_content_button.textContent = "閉じる";
@@ -941,7 +909,7 @@ class post_moblie {
         this.post_content.innerHTML += set_text_with_newline(
           this.content_split[2 * this.image_count]
         );
-        if (user_id >= 1) {
+        if (my_user_id >= 1) {
           let call_by_view_request = new XMLHttpRequest();
           call_by_view_request.open(
             "POST",
@@ -955,7 +923,7 @@ class post_moblie {
           call_by_view_request.setRequestHeader("X-CSRFToken", csrftoken);
           let request_json_data = {
             content_id: String(this.content_id),
-            user_id: `{{user_id}}`,
+            user_id: String(my_user_id),
             session_id_1: session_id_1,
             session_id_2: session_id_2,
           };
@@ -966,14 +934,6 @@ class post_moblie {
       this.post_content_box.style.display = "none";
       this.open_content_button.textContent = "読む";
       this.content_open_flag = false;
-      relocation_page_box();
-    }
-    if ("{{auto_comment_open}}" == 1) {
-      open_comment(
-        document.getElementById(
-          `content_id_of_displayed_post_${listed_content_number}`
-        ).textContent
-      );
     }
   }
 
@@ -998,21 +958,21 @@ class post_moblie {
         .then((data) => {
           if (data["result"] == "success") {
             if (data["like"] == "added") {
-              this.like_button_img.src = "/media/like_button_liked.png";
+              this.like_button_img.src = "/media/like_button_liked.svg";
               this.like_count++;
               this.like_count_text.textContent = String(this.like_count);
             } else if (data["like"] == "removed") {
-              this.like_button_img.src = "/media/like_button_normal.png";
+              this.like_button_img.src = "/media/like_button_normal.svg";
               this.like_count--;
               this.like_count_text.textContent = String(this.like_count);
             }
             if (data["dislike"] == "added") {
               this.dislike_button_img.src =
-                "/media/dislike_button_disliked.png";
+                "/media/dislike_button_disliked.svg";
               this.dislike_count++;
               this.dislike_count_text.textContent = String(this.dislike_count);
             } else if (data["dislike"] == "removed") {
-              this.dislike_button_img.src = "/media/dislike_button_normal.png";
+              this.dislike_button_img.src = "/media/dislike_button_normal.svg";
               this.dislike_count--;
               this.dislike_count_text.textContent = String(this.dislike_count);
             }
@@ -1038,3 +998,87 @@ class post_moblie {
     main_middle.style.height = `${document.documentElement.scrollHeight}px`;
   }
 }
+let post_data_loading_flag = false;
+const fetch_post = ({
+  url,
+  box = document.getElementById("main_middle"),
+  display_delete_post_button = false,
+  out_of_main_box = document.getElementById("out_of_main_box"),
+  uni_post = false,
+  option_category = "",
+  subject_id = 0,
+  extra_request_data = {},
+}) => {
+  let request_json_data = {
+    session_id_1: session_id_1,
+    session_id_2: session_id_2,
+  };
+  request_json_data = Object.assign(request_json_data, extra_request_data);
+  if (post_data_loading_flag == false) {
+    //post_data_loading_flag=trueサーバーに余裕があるうちは無効
+    fetch(url, {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json", //JSON形式のデータのヘッダー
+        "X-CSRFToken": csrftoken,
+      },
+      body: JSON.stringify(request_json_data),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        post_data_loading_flag = false;
+        var displayed_post_number = Number(data["amount_of_displayed_post"]);
+        if (displayed_post_number <= 0) {
+          box.innerHTML = "";
+        } else if (displayed_post_number >= 1) {
+          let page_number = Number(data[`page_number`]);
+          let total_page_number = Number(data[`total_page_number`]);
+          let content_id_list = data[`content_id_combined`].split("<");
+          let title_list = data[`title_combined`].split("<");
+          let content_list = data[`content_combined`].split("<");
+          let user_id_list = data[`user_id_combined`].split("<");
+          let user_name_list = data[`user_name_combined`].split("<");
+          let overview_list = data[`overview_combined`].split("<");
+          let word_counts_list = data[`word_counts_combined`].split("<");
+          let tags_list = data[`tags_combined`].split("<");
+          let my_review_list = data[`my_review_combined`].split("<");
+          let like_counts_list = data[`like_counts_combined`].split("<");
+          let dislike_counts_list = data[`dislike_counts_combined`].split("<");
+          let post_date_list = data[`post_date_combined`].split("<");
+          let comment_count_list = data[`comment_count_combined`].split("<");
+          let post_dict_list = [];
+          for (let i = 0; i < displayed_post_number; i++) {
+            post_dict_list[i] = {
+              content_id: Number(content_id_list[i]),
+              title: title_list[i],
+              content: content_list[i],
+              overview: overview_list[i],
+              tags: tags_list[i],
+              post_date: post_date_list[i],
+              user_id: Number(user_id_list[i]),
+              username: user_name_list[i],
+              my_review: my_review_list[i],
+              like_count: Number(like_counts_list[i]),
+              dislike_count: Number(dislike_counts_list[i]),
+              comment_count: Number(comment_count_list[i]),
+            };
+          }
+          let post_box_list = [];
+          box.innerHTML = "";
+          for (let i = 0; i < displayed_post_number; i++) {
+            post_box_list[i] = new post_component(
+              {
+                display_delete_post_button: display_delete_post_button,
+                out_of_main_box: out_of_main_box,
+                uni_post: uni_post,
+                option_category: option_category,
+                subject_id: subject_id,
+              },
+              box,
+              post_dict_list[i]
+            );
+          }
+        }
+      });
+  }
+};

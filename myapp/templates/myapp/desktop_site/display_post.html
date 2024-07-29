@@ -1,12 +1,106 @@
-{% extends 'myapp/base.html' %}
-
+{% extends 'myapp/desktop_site/base.html' %}
+{% load static %}
+{% block title %}
+{{title_combined}}
+{% endblock %}
 {% block content %}
-<body>
-    <div class="post_title">
-        {{post_title}}
-    </div><br>
-    <div class="post_content">
-        {{post_content}}
-    </div><br>
-    </boday>
+
+{% endblock %}
+
+{% block out_of_box %}
+{% endblock %}
+{% block script %}
+
+<script src="{% static 'myapp/scripts/parts.js' %}"></script>
+
+<script>
+    const main_middle = document.getElementById("main_middle")
+    main_middle.classList.add("main_middle_serach")
+    const out_of_main_box = document.getElementById("out_of_main_box")
+    const user_id = Number(`{{user_id}}`)
+    const username = `{{username}}`
+    const session_id_key_1 = 'session_id_1'
+    const session_id_key_2 = 'session_id_2'
+    /// 正規表現でcookie値を取得
+    const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1]
+    const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1]
+
+    var discussion_box = document.getElementById("discussion_box")
+    var discussion_box_opened = false
+    var discussion_box_opened_content_id
+    var request_json_data
+
+    var amount_of_displayd_comment = 0
+    var comment_id_list = []
+    var comment_content_list = []
+    var parent_comment_id_list = []
+    var comment_user_id_list = []
+    var comment_username_list = []
+    var comment_date_list = []
+    var child_comment_open_flag_list = []
+    
+    let option_category=`{{option_category}}`
+    let subject_id=Number(`{{subject_id}}`)
+
+    let dieplayed_post_number = Number(`{{amount_of_displayed_post}}`)
+    let page_number = Number(`{{page_number}}`)
+    let total_page_number = Number(`{{total_page_number}}`)
+    let content_id_list = `{{content_id_combined}}`.split("<")
+    let title_list = `{{title_combined}}`.split("<")
+    let content_list = `{{content_combined}}`.split("<")
+    let user_id_list = `{{user_id_combined}}`.split("<")
+    let user_name_list = `{{user_name_combined}}`.split("<")
+    let overview_list = `{{overview_combined}}`.split("<")
+    let word_counts_list = `{{word_counts_combined}}`.split("<")
+    let tags_list = `{{tags_combined}}`.split("<")
+    let my_review_list = `{{my_review_combined}}`.split("<")
+    let like_counts_list = `{{like_counts_combined}}`.split("<")
+    let dislike_counts_list = `{{dislike_counts_combined}}`.split("<")
+    let post_date_list = `{{post_date_combined}}`.split("<")
+    let comment_count_list = `{{comment_count_combined}}`.split("<")
+    let post_dict_list = []
+    for (let i = 0; i < dieplayed_post_number; i++) {
+        post_dict_list[i] = {
+            content_id: Number(content_id_list[i]),
+            title: title_list[i],
+            content: content_list[i],
+            overview: overview_list[i],
+            tags: tags_list[i],
+            post_date: post_date_list[i],
+            user_id: Number(user_id_list[i]),
+            username: user_name_list[i],
+            my_review: my_review_list[i],
+            like_count: Number(like_counts_list[i]),
+            dislike_count: Number(dislike_counts_list[i]),
+            comment_count: Number(comment_count_list[i])
+        }
+    }
+    ///ここからcontent表示
+    if (dieplayed_post_number == -1) {
+    }
+    else if (dieplayed_post_number == 0) {
+        let no_content = document.createElement("div")
+        no_content.textContent = "この条件に合う投稿はありません"
+        no_content.classList.add("no_content")
+        main_middle.appendChild(no_content)
+    }
+    else if (dieplayed_post_number >= 1) {
+        let post_box_list = []
+        for (let i = 0; i < dieplayed_post_number; i++) {
+            post_box_list[i] = new post_component(
+                {
+                    display_delete_post_button: false,
+                    out_of_main: out_of_main_box,
+                    uni_post:true,
+                    option_category:option_category,
+                    subject_id:subject_id,
+                },
+                main_middle,
+                post_dict_list[i]
+            )
+        }
+    }
+
+
+</script>
 {% endblock %}

@@ -2,48 +2,59 @@
 <!---->
 {% load static %}
 <!--<-->
+{% block title %}
+ログイン
+{% endblock %}
 {% block content %}
 <div class="gray_out_login_page">
     <div class="login_box">
-
+        <div class="H3_login_box">
+            <h3 class="H3_login">ログイン</h3>
+        </div>
         <div class="mailaddress_input_box">
-            <h3 style="margin-top: 3vw; margin-bottom: 4vw;">ログイン</h3>
             <input class="mailaddress_input" id="mailaddress_input" type="email" name="mailaddress" form="send"
                 maxlength="255" size="40" placeholder="メールアドレス" />
         </div>
-        <div class="password_input_box" style="margin-top: 3vh;">
+        <div class="password_input_box" style="margin-top: 0;">
             <input class="password_input" id="password_input" type="password" name="password" form="send"
                 maxlength="255" size="40" placeholder="パスワード" />
-        </div><br>
-        <button style="width: 40vw;margin-top: 3vw;" class="general_button_large" type="button"
-            onclick="confirmation_information()">ログイン</button>
-
-
+        </div>
+        <button class="Login_button" type="button" id="login_button">ログイン</button>
         <a href="{% url 'home' %}signup/">
             <div class="login_to_signup">
                 登録はこちら
             </div>
         </a>
-
     </div>
 </div>
 {% endblock %}
 {% block script %}
 <script src="{% static 'myapp/scripts/parts.js' %}"></script>
 <script>
+
     document.getElementById("password_input").addEventListener("input", () => {
-        if (password_patteen.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value != "") {
+        if (password_pattern.test(document.getElementById("password_input").value) == false && document.getElementById("password_input").value != "") {
             alert("パスワードに使用可能な文字は英数字と!@#$%^&*()_+-=[]{}|;:',.<>?/~`のみです")
             document.getElementById("password_input").value = ""
         }
     })
 
+    document.getElementById("login_button").addEventListener("click",()=>{
+        confirmation_information()
+    })
+    
     function confirmation_information() {
+
         let password = document.getElementById("password_input").value
         let mailaddress = document.getElementById("mailaddress_input").value
-        if (mailaddress_patteen.test(mailaddress) == false) { alert("メールアドレスが不正です") }//文字数チェックも含む
-        else if (password_patteen.test(password) == false) { alert("パスワードが不正です") }
+        if (mailaddress_pattern.test(mailaddress) == false) {
+            alert("メールアドレスが不正です")
+        }//文字数チェックも含む
+        else if (password_pattern.test(password) == false) {
+            alert("パスワードが不正です")
+        }
         else {
+
             request_json_data = {
                 password: password,
                 mailaddress: mailaddress,

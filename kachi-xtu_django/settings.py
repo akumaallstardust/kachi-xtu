@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False if DEBUG else True
 CSRF_COOKIE_SECURE = False
 # settings.py
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024*1024*50
@@ -160,3 +160,21 @@ TIMEOUT = 100
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT =os.path.join(PROJECT_DIR, "media_local")
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(PROJECT_DIR, "myapp","etc",'error_django.log'),  # 環境に合わせてパスを変更
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+} if not DEBUG else {}

@@ -1,16 +1,28 @@
 {% extends 'myapp/moblie_site/base.html' %}
 
-
+{% block title %}
+マイページ
+{% endblock %}
 {% block content %}
 <div class="gray_out_user_page">
 </div>
 <div class="user_infomation_box">
     <div class="user_name_icon_box" id="user_name_icon_box">
         <div class="user_page_icon_box">
-            <a href="{% url 'home' %}changeuserinfo/"><img class="user_page_icon"
-                    src="/media/user_icons/user_icon_{{user_id}}.png" alt="icon"></a>
+            <a href="{% url 'home' %}changeuserinfo/" style="position: relative;height: 0px;">
+                <img class="user_page_icon" src="/media/user_icons/user_icon_{{user_id}}.png" alt="icon">
+            </a>
         </div>
-        <div class="user_page_name">{{username}}</div>
+        <div class="user_page_name" id="user_page_name">{{username}}</div>
+        <script>
+            var windowWidth = window.innerWidth;
+            // 33vwを計算
+            var vw33 = windowWidth * 0.33;
+            // 33vwが150pxを超えるかどうかを判定
+            if (vw33 > 150) {
+                document.getElementById("user_page_name").style.left="160px"
+            }
+        </script>
         <div class="user_page_user_id">ID : {{user_id}}</div>
     </div>
     <div id="user_page_profile" class="user_page_profile">{{user_profile}}</div>
@@ -24,8 +36,11 @@
         <a href="{% url 'home' %}changeuserinfo/">
             <div class="my_page_option" id="my_page_option_changeuserinfo">ユーザー情報変更</div>
         </a>
-        <a href="{% url 'home' %}changepassword/">
-            <div class="my_page_option" id="my_page_option_changeuserinfo">パスワード変更</div>
+        <a href="{% url 'home' %}changepassword/" id="link_to_change_password">
+            <div class="my_page_option">パスワード変更</div>
+        </a>
+        <a href="{% url 'true_signup_page' %}" id="link_to_true_sign_up" style="display: none;">
+            <div class="my_page_option">本登録</div>
         </a>
         <div class="my_page_option" id="my_page_option_logout">ログアウト</div>
         <a href="{% url 'home' %}deleteaccount/">
@@ -33,6 +48,8 @@
         </a>
     </div>
 </div>
+{% endblock %}
+{% block script %}
 <script>
     function addbr(el, br_conut = 1) {
         for (let i = 0; i < brconut; i++) {
@@ -43,9 +60,12 @@
     function redirect_to_page(link_my_site) {
         location.href = (`{% url 'home' %}${link_my_site}/`)
     }
-    const user_id = Number(`{{user_id}}`)
+    const guest_flag = `{{guest_flag}}`
+    if (guest_flag == "y") {
+        document.getElementById("link_to_true_sign_up").style.display = "block"
+        document.getElementById("link_to_change_password").style.display = "none"
+    }
     const username = `{{username}}`
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
     const session_id_key_1 = 'session_id_1'
     const session_id_key_2 = 'session_id_2'
     /// 正規表現でcookie値を取得
@@ -55,30 +75,66 @@
         document.getElementById("user_page_profile").textContent = "プロフィールが設定されていません"
         document.getElementById("user_page_profile").style.opacity = "0.4"
     }
-    document.getElementById("my_page_option_logout").addEventListener("click",() => {
-        let request_json_data = {
-            session_id_1: session_id_1,
-            session_id_2: session_id_2,
-        }
-        fetch("{% url 'home' %}report_process/", {
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/json',//JSON形式のデータのヘッダー
-                "X-CSRFToken": csrftoken
-            },
-            body: JSON.stringify(request_json_data)
-        })
-            .then(response => {
+    const log_out = () => {
+        if (guest_flag == "y") {
+            if (window.confirm('ゲストユーザーの状態でログアウトしたら、二度とログインすることができません\nそれでもログアウトしますか?')) {
                 document.cookie = 'session_id_1=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
                 document.cookie = 'session_id_2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-                location.href = (`{% url 'home' %}`)
-            })
-            .catch((error) => {
-                document.cookie = 'session_id_1=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-                document.cookie = 'session_id_2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-                location.href = (`{% url 'home' %}`)
-            })
+                let request_json_data = {
+                    session_id_1: session_id_1,
+                    session_id_2: session_id_2,
+                }
+                fetch("{% url 'home' %}report_process/", {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                        "X-CSRFToken": csrftoken
+                    },
+                    body: JSON.stringify(request_json_data)
+                })
+                    .then(response => {
+                        location.href = (`{% url 'home' %}`)
+                    })
+                    .catch((error) => {
+                        location.href = (`{% url 'home' %}`)
+                    })
+            }
+            // 「OK」時の処理終了
 
+            // 「キャンセル」時の処理開始
+            else {
+
+                window.alert('キャンセルされました'); // 警告ダイアログを表示
+
+            }
+        }
+        else {
+            document.cookie = 'session_id_1=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+            document.cookie = 'session_id_2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+            let request_json_data = {
+                session_id_1: session_id_1,
+                session_id_2: session_id_2,
+            }
+            fetch("{% url 'home' %}report_process/", {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',//JSON形式のデータのヘッダー
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify(request_json_data)
+            })
+                .then(response => {
+
+                    location.href = (`{% url 'home' %}`)
+                })
+                .catch((error) => {
+                    location.href = (`{% url 'home' %}`)
+                })
+        }
+    }
+
+    document.getElementById("my_page_option_logout").addEventListener("click", () => {
+        log_out()
     })
-</script>
+    </script>
 {% endblock %}

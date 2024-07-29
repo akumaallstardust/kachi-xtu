@@ -221,7 +221,7 @@ def add_user_to_index(user: list):
     writer.commit()  # 必ず必要
     # print(str((time.time() - start)*10000//10)+"ms")
 
-def search_post_index(include_text="",exclude_text="",search_conditions=["title"]) -> list:
+def search_post_index(include_text="",exclude_text="",search_subjects=["title"]) -> list:
     include_text=unicodedata.normalize('NFKC',include_text)
     exclude_text=unicodedata.normalize('NFKC',exclude_text)
     if not os.path.exists(index_dir):
@@ -237,7 +237,7 @@ def search_post_index(include_text="",exclude_text="",search_conditions=["title"
     with ix.searcher() as searcher:
         # QueryParserに"content"内を検索することを指定
         parser = qparser.MultifieldParser(
-            search_conditions, ix.schema
+            search_subjects, ix.schema
         )
         # OperatorsPluginはAnd,orなどに好きな記号を割り当てることが出来る
         op = qparser.OperatorsPlugin(And="&", Or=">", Not="<")#誤作動防止のためnotとorは禁止された文字
@@ -252,5 +252,5 @@ def search_post_index(include_text="",exclude_text="",search_conditions=["title"
         results = searcher.search(query, limit=None,sortedby=FieldFacet("content_id", reverse=False))  # 検索語で全文検索
         # print(results)
         matched_posts = [int(result.values()[0]) for result in results]  # resultはlist
-        # print(str((time.time() - start)*10000//10)+"ms")
+        #print(str((time.time() - start)*10000//10)+"ms")
         return matched_posts

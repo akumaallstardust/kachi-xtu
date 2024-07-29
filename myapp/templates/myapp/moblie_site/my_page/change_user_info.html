@@ -1,0 +1,203 @@
+{% extends 'myapp/moblie_site/base.html' %}
+{% block title %}
+ユーザー情報変更
+{% endblock %}
+{% block content %}
+<div class="change_user_info_box">
+    <div class="change_icon_input_box" id="change_icon_input_box">
+        <label for="change_icon_input" class="change_icon_input_label">
+            <img class="change_icon_input_label_img" id="change_icon_input_label_img" style="pointer-events: none;"
+                src="/media/user_icons/user_icon_{{user_id}}.png" alt="icon">
+            <div class="change_icon_input_label_button">変更</div>
+        </label>
+        <input title="アイコン入力" id="change_icon_input" type="file" style="display: none;">
+    </div>
+    <div class="change_user_info_right_box">
+        <div class="change_username_box" id="change_username_box">
+            <div class="general_vertical_line" style="margin-left: 5%;"></div>
+            <input title="ニックネーム" id="change_username_input" value="{{username}}" type="text"
+                class="change_username_input" placeholder="ニックネームを入力">
+        </div>
+        <div class="change_profile_box" id="change_profile_box">
+            <div class="general_vertical_line" style="margin-left: 5%;"></div>
+            <h2 style="vertical-align: top; display: inline-block; text-align: left; margin-left: 3%;">プロフィール</h2>
+            <textarea name="change_profile_texarea" class="change_profile_texarea" id="change_profile_texarea"
+                value="{{user_profile}}" maxlength="150" placeholder="プロフィールを入力"></textarea>
+        </div>
+    </div>
+    <div class="change_user_info_button_box">
+        <button class="change_user_info_button" id="change_user_info_button" type="button"
+            onclick="check_and_post()">変更を送信</button>
+    </div>
+</div>
+
+{% endblock %}
+{% block script %}
+<script>
+    const session_id_1 = document.cookie.match(new RegExp('session_id_1' + '\=([^\;]*)\;*'))[1];
+    const session_id_2 = document.cookie.match(new RegExp('session_id_2' + '\=([^\;]*)\;*'))[1];
+    var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    const icon_input = document.getElementById("change_icon_input")
+    const username_input = document.getElementById("change_username_input")
+    const profile_textarea = document.getElementById("change_profile_texarea")
+    var icon_image_blob
+    var request_json_data
+    var image_input_processing_flag = false
+    var icon_inputed_flag = false
+    var inputed_image
+    var inputed_image_src = ""
+    function icon_input_process() {
+        if (image_input_processing_flag == false) {
+            inputed_image = icon_input.files[0]
+            icon_input.value = ""
+            let lastDotPosition = inputed_image.name.lastIndexOf('.')
+            if (lastDotPosition == -1) {
+                alert("使用できる画像はpngとjpegのみです\n正しいファイルか確認してください")
+            }
+            else {
+                let extension = inputed_image.name.substring(lastDotPosition + 1).toLowerCase();
+                if (extension == "png" || extension == "jpg"||extension == "jpeg") {
+                    if (icon_input.files && inputed_image) {
+                        image_input_processing_flag = true
+                        var reader = new FileReader()
+                        reader.onload = function (e) {
+                            let img = new Image();
+                            img.onload = function () {
+                                // Canvasを作成し、画像を描画する
+                                let canvas = document.createElement('canvas');
+                                let ctx = canvas.getContext('2d');
+                                canvas.width = 400;
+                                canvas.height = 400;
+
+                                // 画像の中心を計算し、正方形に切り取る
+                                let sideLength = Math.min(img.width, img.height);
+                                let offsetX = (img.width - sideLength) / 2;
+                                let offsetY = (img.height - sideLength) / 2;
+
+                                // Canvasに画像を描画し、400x400にリサイズする
+                                ctx.drawImage(img, offsetX, offsetY, sideLength, sideLength, 0, 0, 400, 400);
+
+                                // Canvasの内容を画像のsrcに設定する
+                                inputed_image_src = canvas.toDataURL();
+                                document.getElementById("change_icon_input_label_img").src = inputed_image_src
+
+                                canvas.toBlob(function (blob) {icon_image_blob=blob }, inputed_image.type);
+
+                                icon_inputed_flag = true
+
+                                image_input_processing_flag = false
+                            }
+                            img.src = e.target.result;
+                        }
+                        reader.onerror = function () {
+                            image_input_processing_flag = false
+                            alert("エラー\nページを再読み込みします")
+                            window.location.reload(true)
+                        }
+                        reader.readAsDataURL(inputed_image)
+                    }
+                    else {
+                        alert("エラー")
+                    }
+                }
+                else {
+                    alert("使用できる画像はpngとjpegのみです\n正しいファイルか確認してください")
+                }
+            }
+
+
+        }
+        else {
+            alert("処理中です")
+        }
+    }
+    icon_input.addEventListener("change", () => {
+        icon_input_process()
+    })
+    username_input.addEventListener("input", () => {
+        if (username_exclusion_pattern.test(username_input.value)) {
+            let censored_text = username_input.value.replace(/</g, "＜")
+            censored_text = censored_text.replace(/>/g, "＞")
+            censored_text = censored_text.replace(/\n\r/g, "")
+            censored_text = censored_text.replace(/\r/g, "")
+            censored_text = censored_text.replace(username_exclusion_pattern, "")
+            username_input.value = censored_text
+        }
+    })
+
+    profile_textarea.addEventListener("input", () => {
+        let cursor_pos = profile_textarea.selectionEnd
+        if (content_exclusion_pattern.test(profile_textarea.value)) {
+            let censored_text = profile_textarea.value.replace(/</g, "＜")
+            censored_text = censored_text.replace(/>/g, "＞")
+            censored_text = censored_text.replace(/\n\r/g, "\n")
+            censored_text = censored_text.replace(/\r/g, "\r")
+            censored_text = censored_text.replace(content_exclusion_pattern, "")
+            profile_textarea.value = censored_text
+            profile_textarea.selectionStart = cursor_pos
+            profile_textarea.selectionEnd = cursor_pos
+        }
+        let matches = profile_textarea.value.match(/\n/g)
+        let new_line_count = matches ? matches.length : 0
+        if (new_line_count >= 4) {
+            let texts = profile_textarea.value.split("\n")
+            profile_textarea.value = ""
+            for (let i = 0; i < texts.length; i++) {
+                profile_textarea.value += texts[i]
+                if (i <= 2) {//3回まで
+                    profile_textarea.value += "\n"//new_line_count >= 4なので無条件で改行が足せる
+                }
+            }
+            profile_textarea.selectionStart = cursor_pos
+            profile_textarea.selectionEnd = cursor_pos
+        }
+    })
+
+    var upload_processing_flag = false
+    function check_and_post() {
+        if (upload_processing_flag == false) {
+            let formData = new FormData()
+            request_json_data = {
+                session_id_1: session_id_1,
+                session_id_2: session_id_2,
+                new_username: username_input.value,
+                new_profile: profile_textarea.value,
+                icon_inputed_flag: icon_inputed_flag ? "y" : "n"
+            }
+            formData.append('json', new Blob([JSON.stringify(request_json_data)], { type: 'application/json' }));
+            if (icon_inputed_flag) {
+                formData.append('image_file', icon_image_blob);
+            }
+            fetch("{% url 'home' %}change_user_info_process/", {
+                    method: 'POST',
+                    headers: {
+                        "X-CSRFToken": csrftoken
+                    },
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data["result"] == "success") {
+                            alert("変更に成功しました")
+                            image_input_processing_flag=false
+                            window.location.reload(true)
+                            location.href="{% url 'home' %}mypage/"
+                        }
+                        else if(data["result"]=="user_overlap_error"){
+                            alert("既に使われているニックネームです\nニックネームを使われていないものに変更してください")
+                        }
+                        else {
+                            alert("エラー")
+                            window.location.reload(true)
+                        }
+                    })
+                    .catch(error => {
+                        alert("エラー")
+                        window.location.reload(true)
+                    });
+        } else {
+            console.warn('処理中です')
+        }
+    }
+</script>
+{% endblock %}

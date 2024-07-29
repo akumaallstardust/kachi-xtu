@@ -2,21 +2,54 @@
 <!---->
 {% load static %}
 <!--<-->
+{% block title %}
+検索
+{% endblock %}
 {% block content %}
-<div class="datailed_search_box">
-    <form id="datailed_search" action="{% url 'home' %}search/" method="GET">
-        <input id="page_number" type="hidden" name="page_number" form="datailed_search" value="1" />
+<div class="search_box">
+    <form id="search" action="{% url 'home' %}search/" method="GET">
+        <input id="search_mode" type="hidden" name="search_mode" form="search" value="{{search_mode}}" />
+        <input id="page_number" type="hidden" name="page_number" form="search" value="1" />
+        <input id="search_subjects_joined" type="hidden" name="search_subjects_joined" form="search"
+            value="{{search_subjects_joined}}" />
     </form>
-    <div class="datailed_search_input_box">
-        検索
-        <input class="datailed_search_input" id="datailed_search_input" name="search_words" type="text"
-            style="margin-bottom: 2vw" form="datailed_search" placeholder="検索ワードを入力" value="{{search_words}}" /><br />
-        除外
-        <input class="datailed_search_input" id="datailed_search_input" name="search_words_exclude" type="text"
-            style="margin-bottom: 2vw" form="datailed_search" placeholder="除外ワードを入力" value="{{search_words_exclude}}" />
+    <div id="Search_mode_select_button_box" class="Search_mode_select_button_box">
+        <button id="search_mode_select_normal" class="Search_mode_select_button_selected">
+            通常
+        </button>
+        <button id="search_mode_select_detail" class="Search_mode_select_button">
+            詳細
+        </button>
+        <script>
+            document.getElementById("search_mode_select_normal").addEventListener("click", () => {
+                select_search_mode("normal")
+            })
+            document.getElementById("search_mode_select_detail").addEventListener("click", () => {
+                select_search_mode("detail")
+            })
+            if (document.getElementById("search_mode").value == "normal") {
+            }
+            else {
+                document.getElementById("search_mode_select_normal").className = "Search_mode_select_button"
+                document.getElementById("search_mode_select_detail").className = "Search_mode_select_button_selected"
+            }
+        </script>
     </div>
+    <div class="search_input_box">
+        検索
+        <input class="search_input" id="search_input" name="search_words" type="text" form="search"
+            placeholder="検索ワードを入力" value="{{search_words}}" />
+    </div>
+
+    <div class="search_input_box">
+        除外
+        <input class="search_input" id="search_input" name="search_words_exclude" type="text" form="search"
+            placeholder="除外ワードを入力" value="{{search_words_exclude}}" />
+    </div>
+
     <div class="search_order_select_box">
-        並び順<select name="post_order" id="post_order_select" form="datailed_search">
+        並び順
+        <select title="並び順" class="search_order_select" name="post_order" id="post_order_select" form="search">
             <option value="new_post">投稿日(新しい順)</option>
             <option value="old_post">投稿日(古い順)</option>
             <option value="view_many_total">閲覧数(多い順)</option>
@@ -28,18 +61,37 @@
             <option value="like_dislike_ratio_much">平均評価(高い順)</option>
             <option value="like_dislike_ratio_little">平均評価(低い順)</option>
         </select>
+        <script>
+            document.getElementById("post_order_select").value = "{{post_order}}"
+        </script>
     </div>
-    <div class="datailed_search_button_box">
-        <button class="datailed_search_button" id="datailed_search_button" type="submit" form="datailed_search">
+    <div class="search_mode_detail_box" id="search_mode_detail_box" style="display: none;">
+        <div class="Select_search_subject_button_box">
+            <div class="Select_search_subject_button_box_text">検索対象:</div>
+            <button class="Slect_subject_button_selected" id="search_mode_select_title"
+                onclick="set_search_subject('title')">タイトル</button>
+            <button class="Slect_subject_button_selected" id="search_mode_select_content"
+                onclick="set_search_subject('content')">本文</button>
+            <button class="Slect_subject_button_selected" id="search_mode_select_overview"
+                onclick="set_search_subject('overview')">概要</button>
+            <button class="Slect_subject_button_selected" id="search_mode_select_tags"
+                onclick="set_search_subject('tags')">タグ</button>
+        </div>
+    </div>
+    <script>
+        if (document.getElementById("search_mode").value == "detail") {
+            document.getElementById("search_mode_detail_box").style.display = "inline"
+        }
+    </script>
+    <div class="search_button_box">
+        <button class="search_button" id="search_button" type="submit" form="search">
             検索
         </button>
     </div>
 </div>
 <div class="link_to_alter_page_number_box" id="link_to_alter_page_number"></div>
 {% endblock %} {% block out_of_box %}
-<div id="gray_out_search_page" class="gray_out_search_page" style="display: none">
-    <div id="discussion_box" class="discussion_box" style="display: none"></div>
-</div>
+
 <form id="report_form" action="{% url 'home' %}report/" method="GET">
     {% csrf_token %}
     <input id="report_subject_category" type="hidden" name="subject_category" form="report_form" value="post" />
@@ -51,35 +103,61 @@
 <script src="{% static 'myapp/scripts/parts.js' %}"></script>
 
 <script>
-    const main_middle = document.getElementById("main_middle")
-    main_middle.classList.add("main_middle_serach")
-    const gray_out_search_page = document.getElementById("gray_out_search_page")
-    function add_br(el, br_conut = 1) {
-        for (let i = 0; i < br_conut; i++) {
-            let new_br = document.createElement("br")
-            el.appendChild(new_br)
-        }
-    }
-    function add_border(el, br_conut = 1) {
-        for (let i = 0; i < br_conut; i++) {
-            let new_border = document.createElement("div")
-            new_border.classList.add("pale_border")
-            el.appendChild(new_border)
-        }
-    }
-    function enlarge_right_box() {
-        main_middle.style.left = "0%"
-        sub_right.style.left = "60%"
-        sub_left.style.width = "0%"
-        sub_right.style.width = "40%"
-    }
-    const user_id = Number(`{{user_id}}`)
+    const main_middle=document.getElementById("main_middle")
+    const gray_out_search_page = document.getElementById("gray_out_out_of_main")
+    var user_id = Number(`{{user_id}}`)
     const username = `{{username}}`
     const session_id_key_1 = 'session_id_1'
     const session_id_key_2 = 'session_id_2'
     /// 正規表現でcookie値を取得
     const session_id_1 = document.cookie.match(new RegExp(session_id_key_1 + '\=([^\;]*)\;*'))[1]
     const session_id_2 = document.cookie.match(new RegExp(session_id_key_2 + '\=([^\;]*)\;*'))[1]
+
+    const select_search_mode = (change) => {
+        if (change == "normal") {
+            document.getElementById("search_mode").value = "normal"
+            document.getElementById("search_mode_select_normal").className = "Search_mode_select_button_selected"
+            document.getElementById("search_mode_select_detail").className = "Search_mode_select_button"
+            document.getElementById("search_subjects_joined").value = defalt_search_subjects.join(",")
+            for (let i = 0; i < defalt_search_subjects.length; i++) {
+                document.getElementById("search_mode_select_" + defalt_search_subjects[i]).className = "Slect_subject_button_selected"
+            }
+            document.getElementById("search_mode_detail_box").style.display = "none"
+        }
+        else {
+            document.getElementById("search_mode").value = "detail"
+            document.getElementById("search_mode_select_normal").className = "Search_mode_select_button"
+            document.getElementById("search_mode_select_detail").className = "Search_mode_select_button_selected"
+            document.getElementById("search_mode_detail_box").style.display = "inline"
+        }
+
+    }
+
+    const defalt_search_subjects = ["title", "content", "overview", "tags"]
+
+    for (let i = 0; i < defalt_search_subjects.length; i++) {
+        if (document.getElementById("search_subjects_joined").value.split(",").includes(defalt_search_subjects[i])) {
+            document.getElementById("search_mode_select_" + defalt_search_subjects[i]).className = "Slect_subject_button_selected"
+        }
+        else {
+            document.getElementById("search_mode_select_" + defalt_search_subjects[i]).className = "Slect_subject_button"
+        }
+    }
+
+    const set_search_subject = (subject) => {
+        let search_subjects = document.getElementById("search_subjects_joined").value.split(",")
+        if (search_subjects.includes(subject)) {
+            document.getElementById("search_mode_select_" + subject).className = "Slect_subject_button"
+            search_subjects = search_subjects.filter(function (item) {
+                return item !== subject;
+            });
+        }
+        else {
+            document.getElementById("search_mode_select_" + subject).className = "Slect_subject_button_selected"
+            search_subjects.push(subject)
+        }
+        document.getElementById("search_subjects_joined").value = search_subjects.join(",")
+    }
 
     const onevw = document.documentElement.clientWidth / 100
     const onevh = document.documentElement.clientHeight / 100
@@ -113,6 +191,7 @@
     let like_counts_list = `{{like_counts_combined}}`.split("<")
     let dislike_counts_list = `{{dislike_counts_combined}}`.split("<")
     let post_date_list = `{{post_date_combined}}`.split("<")
+    let comment_count_list = `{{comment_count_combined}}`.split("<")
     let post_dict_list = []
     for (let i = 0; i < dieplayed_post_number; i++) {
         post_dict_list[i] = {
@@ -127,15 +206,10 @@
             my_review: my_review_list[i],
             like_count: Number(like_counts_list[i]),
             dislike_count: Number(dislike_counts_list[i]),
+            comment_count: Number(comment_count_list[i])
         }
     }
 
-    function relocation_page_box() {
-        main_middle.style.height = `100%`
-        main_middle.style.height = `${document.documentElement.scrollHeight}px`
-    }
-
-    ///ここからcontent表示
     let post_box_list = []
     if (dieplayed_post_number == -1) {
     }
@@ -146,7 +220,6 @@
         main_middle.appendChild(no_content)
     }
     else if (dieplayed_post_number >= 1) {
-
         if (total_page_number != 1) {
             let top_transition_page_box = document.createElement("div")
             top_transition_page_box.classList.add("transition_page_box")
@@ -168,7 +241,7 @@
                 top_transition_page_box.appendChild(top_previous_page_button)
                 top_previous_page_button.addEventListener("click", () => {
                     document.getElementById("page_number").value = String(page_number - 1)
-                    document.getElementById('datailed_search').submit();
+                    document.getElementById('search').submit();
                 })
             }
 
@@ -181,21 +254,27 @@
                 top_transition_page_box.appendChild(top_next_page_button)
                 top_next_page_button.addEventListener("click", () => {
                     document.getElementById("page_number").value = String(page_number + 1)
-                    document.getElementById('datailed_search').submit();
+                    document.getElementById('search').submit();
                 })
             }
         }
-        
-        for (let i = 0; i < dieplayed_post_number; i++) {
-            post_box_list[i] = new post_moblie(
-                {
-                    display_delete_post_button: false,
-                    out_of_main: document.getElementById("gray_out_search_page"),
-                },
-                main_middle,
-                post_dict_list[i]
-            )
+        try {
+            for (let i = 0; i < dieplayed_post_number; i++) {
+
+                post_box_list[i] = new post_component(
+                    {
+                        display_delete_post_button: false,
+                        out_of_main: document.getElementById("gray_out_search_page"),
+                    },
+                    main_middle,
+                    post_dict_list[i]
+                )
+            }
         }
+        catch (e) {
+            alert(e)
+        }
+
 
         if (total_page_number != 1) {
             let bottom_transition_page_box = document.createElement("div")
@@ -218,7 +297,7 @@
                 bottom_transition_page_box.appendChild(bottom_previous_page_button)
                 bottom_previous_page_button.addEventListener("click", () => {
                     document.getElementById("page_number").value = String(page_number - 1)
-                    document.getElementById('datailed_search').submit();
+                    document.getElementById('search').submit();
                 })
             }
 
@@ -231,21 +310,11 @@
                 bottom_transition_page_box.appendChild(bottom_next_page_button)
                 bottom_next_page_button.addEventListener("click", () => {
                     document.getElementById("page_number").value = String(page_number + 1)
-                    document.getElementById('datailed_search').submit();
+                    document.getElementById('search').submit();
                 })
             }
         }
 
     }
-
-    window.addEventListener("load", () => {
-        relocation_page_box()
-    })
-
-    window.addEventListener('scroll', function () {
-        if (discussion_box_opened) {
-            relocation_page_box()
-        }
-    });
 </script>
 {% endblock %}

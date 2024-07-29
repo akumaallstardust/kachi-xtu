@@ -28,7 +28,7 @@ current_path=str(Path(__file__).resolve().parent) + ("/indices")
 t_delta = datetime.timedelta(hours=9)
 JST = datetime.timezone(t_delta, "JST")
 password_salt:str=env('PASSWORD_SALT')
-session_duration = 7 * 24 * 60 * 60
+session_duration = 365 * 24 * 60 * 60
 redirect_to_toppage = HttpResponse(
     "<head><meta http-equiv='refresh' content='0; url="+site_url+"'></head>"
 )
@@ -36,12 +36,16 @@ redirect_to_toppage = HttpResponse(
 redirect_to_error_page=HttpResponse(
     "<head><meta http-equiv='refresh' content='0; url="+site_url+"error/'></head>")
 
+redirect_to_search_page = HttpResponse(
+    "<head><meta http-equiv='refresh' content='0; url="+site_url+"search/'></head>"
+)
+
 redirect_to_signup = HttpResponse(
     "<head><meta http-equiv='refresh' content='0; url="+site_url+"signup/'></head>"
 )
 
 
-class connection_to_user_db:  # 基本的にはこれを使ってセッション管理 update_valuesを無効化済み　後で絶対戻す、appはset_responseを使用しないのでupdate_valuesは使わない
+class connection_to_user_db:  # 基本的にはこれを使ってセッション管理 update_valuesを無効化済み　後で戻す、appはset_responseを使用しないのでupdate_valuesは使わない
     def __init__(self, request: HttpRequest | None = None,request_json_data: dict | None = None,get_user_setting=False,from_app_flag=False,get_unread_notification_flag=True):  # 最初にユーザー確認
         self.cnx = my_functions.connect_to_database()
         self.cursor = self.cnx.cursor(buffered=True)
@@ -228,6 +232,7 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
             query="select username,guest_flag from user_data_table where user_id={};".format(self.user_id)
             cursor.execute(query)
             result=cursor.fetchone()
+            response_dict["user_id"]=str(self.user_id)
             response_dict={**{"username":result[0],"guest_flag":result[1]},**self.user_setting_dict,**self.user_basic_dict}
             query="select followed_users from user_relation_table where user_id={};".format(self.user_id)
             cursor.execute(query)
@@ -261,7 +266,8 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
                     
                 else:
                     if self.value_1!=0:
-                        print(self.value_1)
+                        #print(self.value_1)
+                        pass
                     self.user_id = -1
                     self.user_basic_dict["user_id"] = str(self.user_id)
             else:
@@ -271,7 +277,7 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
             self.user_id = -3
             self.user_basic_dict["user_id"] = str(self.user_id)
 
-    def logout(self,cursor)->None:
+    def logout(self,cursor)->None:#commitしろ
         if(self.user_id>=1):
             query="DELETE FROM user_session_table WHERE session_id_1=%s AND session_id_2=%s;"
             data=(str(self.value_1),str(self.value_2),)
@@ -286,35 +292,17 @@ def unauthorized_request(request: HttpRequest):
 
 def tekitou(request:HttpRequest):
     cono=connection_to_user_db(request=request)
-    my_functions.add_notification_data(subject_category="any_text",subject_id=1144,cursor=cono.cursor,user_id=2,any_text_title="asd",any_text_main_content="オールスターダスト計画")
-    #my_functions.reset_index()
+    my_functions.add_notification_data(subject_category="any_text",subject_id=1144,cursor=cono.cursor,user_id=1,any_text_title="asd",any_text_main_content="オールスターダスト計画")
+    
+    my_functions.reset_index()
     cono.cnx.commit
     return cono.set_response(HttpResponse("""asdaaaa"""))
 
+
 @csrf_exempt
 def test(request:HttpRequest):
-    if request.method == 'POST':
-        try:
-            # JSONデータを取得
-            data = json.loads(request.body)
-            image_data = data.get('image')
-            if not image_data:
-                return JsonResponse({"error": "No image data provided"}, status=400)
-
-            # Base64データをデコードして保存
-            format, imgstr = image_data.split(';base64,')
-            ext = format.split('/')[-1]
-            file_name = f"ssgguuss.{ext}"
-            file_path = os.path.join(my_functions.media_path, file_name)
-            
-            with open(file_path, 'wb') as f:
-                f.write(base64.b64decode(imgstr))
-            
-            return JsonResponse({"message": "Image uploaded successfully", "file_path": file_path}, status=201)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-    else:
-        return JsonResponse({"error": "Invalid request method"}, status=405)
+    print(1/0)
+    return(HttpResponse("""asd4818409380"""))
 
 
 def cccontact(request:HttpRequest):
@@ -351,17 +339,21 @@ def any_text(request:HttpRequest,item:str=""):
 
 def index(request: HttpRequest):
     cono = connection_to_user_db(request=request)
-    if(cono.session.is_moblie):
-        html_file="myapp/moblie_site/index_no_login.html"
+    if(cono.session.user_id>=1):
+        cono.terminate_connection()
+        return(redirect_to_search_page)
     else:
-        html_file="myapp/index.html"
-    return cono.set_response(
-        render(
-            request=request,
-            template_name=html_file,
-            context=cono.session.user_basic_dict,
+        if(cono.session.is_moblie):
+            html_file="myapp/moblie_site/index_no_login.html"
+        else:
+            html_file="myapp/desktop_site/index_no_login.html"
+        return cono.set_response(
+            render(
+                request=request,
+                template_name=html_file,
+                context=cono.session.user_basic_dict,
+            )
         )
-    )
 
 
 def post(request: HttpRequest):
@@ -369,9 +361,9 @@ def post(request: HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/post_page.html"
     else:
-        html_file="myapp/post_page.html"
+        html_file="myapp/desktop_site/post_page.html"
     return cono.set_response(
-        render(request=request, template_name=html_file, context=cono.session.user_basic_dict)
+        render(request=request, template_name=html_file, context=cono.session.get_full_user_data_dict(cursor=cono.cursor))
     )
 
 
@@ -380,7 +372,16 @@ def signup(request: HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/signup_page.html"
     else:
-        html_file="myapp/signup_page.html"
+        html_file="myapp/moblie_site/signup_page.html"
+    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
+
+
+def true_signup_page(request:HttpRequest):
+    cono = connection_to_user_db(request=request)
+    if(cono.session.is_moblie):
+        html_file="myapp/moblie_site/true_signup_page.html"
+    else:
+        html_file="myapp/moblie_site/true_signup_page.html"
     return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
@@ -389,7 +390,7 @@ def login_page(request: HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/login_page.html"
     else:
-        html_file="myapp/login_page.html"
+        html_file="myapp/moblie_site/login_page.html"
     return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
@@ -402,11 +403,11 @@ def my_page(request:HttpRequest):
         user_data=cono.cursor.fetchone()
         if(user_data is not None):
             username=user_data[0]
-            mypage_dict_combined={**cono.session.user_basic_dict,**{"username":username,"user_profile":user_data[1]}}
+            mypage_dict_combined={**cono.session.get_full_user_data_dict(cursor=cono.cursor),**{"user_profile":user_data[1]}}
             if(cono.session.is_moblie):
                 html_file="myapp/moblie_site/my_page/my_page.html"
             else:
-                html_file="myapp/my_page.html"
+                html_file="myapp/desktop_site/my_page/my_page.html"
             return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
@@ -436,7 +437,7 @@ def view_history(request: HttpRequest):
         if(cono.session.is_moblie):
             html_file="myapp/moblie_site/view_history.html"
         else:
-            html_file="myapp/view_history.html"
+            html_file="myapp/moblie_site/view_history.html"
         response = cono.set_response(response=render(request=request,template_name=html_file,context={**cono.get_full_user_data_dict(),**view_history_content_dict}))
         return response
     return redirect_to_error_page
@@ -451,7 +452,7 @@ def posted_post(request:HttpRequest):
         user_data=cono.cursor.fetchone()
         if(user_data is not None):
             username=user_data[1]
-            user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_conditions=["user_id"])))#何故か重複するので重複排除
+            user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_subjects=["user_id"])))#何故か重複するので重複排除
             posted_post_=my_functions.create_content_dict(
                 cursor=cono.cursor,
                 content_id_list=user_posted_list,
@@ -465,7 +466,7 @@ def posted_post(request:HttpRequest):
             if(cono.session.is_moblie):
                 html_file="myapp/moblie_site/my_page/posted_content.html"
             else:
-                html_file="myapp/posted_content.html"
+                html_file="myapp/moblie_site/my_page/posted_content.html"
             return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
@@ -476,9 +477,9 @@ def posted_post(request:HttpRequest):
 def change_password(request:HttpRequest):
     cono=connection_to_user_db(request=request)
     if(cono.session.is_moblie):
-        html_file="myapp/moblie_site/change_user_info/change_password.html"
+        html_file="myapp/moblie_site/my_page/change_password.html"
     else:
-        html_file="myapp/change_user_info/change_password.html"
+        html_file="myapp/moblie_site/my_page/change_password.html"
     return cono.set_response(
         render(
             request=request,
@@ -488,28 +489,13 @@ def change_password(request:HttpRequest):
     )
 
 
-def change_password_success(request:HttpRequest):
-    cono=connection_to_user_db(request=request)
-    if(cono.session.is_moblie):
-        html_file="myapp/moblie_site/change_user_info/change_password_success.html"
-    else:
-        html_file="myapp/change_user_info/change_password_success.html"
-    return cono.set_response(
-        render(
-            request=request,
-            template_name=html_file,
-            context=cono.session.user_basic_dict,
-        )
-    )
-
-
-def display_post_with_option(request: HttpRequest):
-    category_list=["latest_parent_comment","latest_child_comment",]
-    if("option_category" in request.GET and "subject_id" in request.GET):
-        print("aaa")
-        if request.GET["option_category"] in category_list and my_functions.check_str_is_int(request.GET["subject_id"]):
-            category=request.GET["option_category"]
-            subject_id=int(request.GET["subject_id"])
+def display_post_with_option(request: HttpRequest,option:str):
+    category_list=["latest_parent_comment","latest_child_comment"]
+    option_split=option.split(",")
+    category=option_split[0]
+    if(category in category_list and len(option_split)>=2):
+        if(my_functions.check_str_is_int(option_split[1])):
+            subject_id=int(option_split[1])
         else:
             return redirect_to_error_page
     else:
@@ -538,7 +524,7 @@ def display_post_with_option(request: HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/display_post.html"
     else:
-        html_file="myapp/display_post.html"
+        html_file="myapp/desktop_site/display_post.html"
     response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
 
     return response
@@ -558,11 +544,13 @@ def display_post(request: HttpRequest, content_id: int):
         order="no_sort",
         user_id=cono.session.user_id
         )
-    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post,**{"open_comment_id":"0"}}
+    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post}
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/display_post.html"
     else:
-        html_file="myapp/display_post.html"
+        search_dict_conbined["option_category"]="just_open_comment"
+        search_dict_conbined["subject_id"]="0"
+        html_file="myapp/desktop_site/display_post.html"
     response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
 
     return response
@@ -573,32 +561,55 @@ def search(request: HttpRequest):
     max_display_number=10
     if(my_functions.check_existence(multi=request.GET,keys=["post_order"],allow_empty=False)):
         order=request.GET["post_order"]#不正な文字列の判定はcreate_content_dictでやる
+        if(order=="osusume"):
+            order="like_count_many"
     else:
+        my_functions.error_log("293287897")
         order="new_post"
+
     if(my_functions.check_existence(multi=request.GET,keys=["page_number"],allow_empty=False)):
-        if not re.fullmatch(pattern=r"[1-9][0-9]*", string=request.GET["page_number"]):  # 整数以外を送られたら
-            page_number=1
-        else:
+        if my_functions.check_str_is_int(request.GET["page_number"]):  # 整数以外を送られたら
             page_number=int(request.GET["page_number"])
+        else:
+            my_functions.error_log("2979839878973")
+            page_number=-1
     else:
+        my_functions.error_log("297989878297")
         page_number=1
-    
-    search_conditions=["title","content","overview","tags"]
     search_word_dict={}
+    
+    search_word_dict["post_order"]=order
+    
+    if(my_functions.check_existence(multi=request.GET,keys=["search_mode"],allow_empty=False)):
+        search_word_dict["search_mode"]=request.GET["search_mode"]
+    else:
+        search_word_dict["search_mode"]="normal"
+    
+    if(my_functions.check_existence(multi=request.GET,keys=["search_subjects_joined"],allow_empty=False)):
+        search_subjects=request.GET["search_subjects_joined"].split(",")
+    else:
+        search_subjects=["title","content","overview","tags"]
+    
+    if(not my_functions.check_correct_search_subjects(search_subjects)):
+        search_subjects=["title","content","overview","tags"]
+    
+    search_word_dict["search_subjects_joined"]=",".join(search_subjects)
+    
     if(my_functions.check_existence(multi=request.GET,keys=["search_words"],allow_empty=False)):
         search_words = request.GET["search_words"]
         search_word_dict["search_words"]=search_words
     else:
         search_words="inculde_all"
-        search_conditions.append("for_all")
+        search_subjects.append("for_all")
         search_word_dict["search_words"]=""
+        
     if(my_functions.check_existence(multi=request.GET,keys=["search_words_exclude"],allow_empty=False)):
         exclude_words=request.GET["search_words_exclude"]
         search_word_dict["search_words_exclude"]=exclude_words
     else:
         exclude_words=""
         search_word_dict["search_words_exclude"]=""
-    matched_post_list = my_search.search_post_index(include_text=search_words,exclude_text=exclude_words,search_conditions=search_conditions)
+    matched_post_list = my_search.search_post_index(include_text=search_words,exclude_text=exclude_words,search_subjects=search_subjects)
     displayed_post=my_functions.create_content_dict(
         cursor=cono.cursor,
         content_id_list=matched_post_list,
@@ -608,12 +619,12 @@ def search(request: HttpRequest):
         order=order,
         user_id=cono.session.user_id
         )
-    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post,**search_word_dict,**search_word_dict}
+    search_dict_conbined = {**cono.get_full_user_data_dict(already_set_setting_dict=True), **displayed_post,**search_word_dict}
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/search.html"
     else:
-        html_file="myapp/search.html"
-    response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
+        html_file="myapp/desktop_site/search.html"
+    response = cono.set_response(request=request,templete=html_file,context=search_dict_conbined)
 
     return response
 
@@ -624,7 +635,7 @@ def user_page(request: HttpRequest,owner_user_id: int):
     cono.cursor.execute(query)
     user_data=cono.cursor.fetchone()
     if(user_data is not None):
-        user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(owner_user_id),search_conditions=["user_id"])))#何故か重複するので重複排除
+        user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(owner_user_id),search_subjects=["user_id"])))#何故か重複するので重複排除
         displayed_post=my_functions.create_content_dict(
             cursor=cono.cursor,
             content_id_list=user_posted_list,
@@ -656,12 +667,12 @@ def user_page(request: HttpRequest,owner_user_id: int):
             owner_followed_users_username_combined=owner_followed_users_username_combined[:-1]
         
         mypage_dict_combined={**displayed_post,**cono.session.get_full_user_data_dict(cursor=cono.cursor,already_set_setting_dict=False),
-                              **{"owner_username":user_data[1],"owner_user_id":str(user_data[0]),"owner_user_profile":user_data[2],"owner_followed_users_id_combined":owner_followed_users_id_combined,
-                                 "owner_followed_users_username_combined":owner_followed_users_username_combined}}
+                              **{"owner_username":user_data[1],"owner_user_id":str(user_data[0]),"owner_user_profile":user_data[2],"owner_followed_users_id_combined":mark_safe(owner_followed_users_id_combined),
+                                 "owner_followed_users_username_combined":mark_safe(owner_followed_users_username_combined)}}
         if(cono.session.is_moblie):
             html_file="myapp/moblie_site/user_page.html"
         else:
-            html_file="myapp/user_page.html"
+            html_file="myapp/desktop_site/user_page.html"
         return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
@@ -678,7 +689,7 @@ def notification_page(request:HttpRequest):
         if(cono.session.is_moblie):
             html_file="myapp/moblie_site/notification_page.html"
         else:
-            html_file="myapp/notification_page.html"
+            html_file="myapp/desktop_site/notification_page.html"
         return cono.set_response(response=render(request=request,template_name=html_file,context=notification_page_dict_combined))
     else:
         return redirect_to_signup
@@ -695,9 +706,9 @@ def change_user_info_page(request:HttpRequest):
             username=user_data[0]
             mypage_dict_combined={**cono.session.user_basic_dict,**{"username":username,"user_profile":user_data[1]}}
             if(cono.session.is_moblie):
-                html_file="myapp/moblie_site/change_user_info/change_user_info.html"
+                html_file="myapp/moblie_site/my_page/change_user_info.html"
             else:
-                html_file="myapp/change_user_info/change_user_info.html"
+                html_file="myapp/moblie_site/my_page/change_user_info.html"#後でデスクトップ版を作る
             return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
@@ -711,9 +722,9 @@ def report_page(request:HttpRequest):
         return cono.return_error(requset=request)
     report_page_dict_combined={**cono.get_full_user_data_dict(),**{"subject_category":request.GET["subject_category"],"subject_id":request.GET["subject_id"]}}
     if(cono.session.is_moblie):
-        html_file="myapp/moblie_site/report_page.html"
+        html_file="myapp/moblie_site/abramsreport_page.html"
     else:
-        html_file="myapp/report_page.html"
+        html_file="myapp/moblie_site/abramsreport_page.html"
     return cono.set_response(response=render(request=request,template_name=html_file,context=report_page_dict_combined))
 
 
@@ -722,7 +733,7 @@ def delete_account_page(request:HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/delete_account_page.html"
     else:
-        html_file="myapp/delete_account_page.html"
+        html_file="myapp//moblie_site/delete_account_page.html"
     return cono.set_response(
         render(
             request=request,
@@ -752,7 +763,7 @@ def signup_common(request: HttpRequest,from_app_flag=False):  # ユーザー登�
     password = request_data["password"]
     cnx = my_functions.connect_to_database()
     cursor = cnx.cursor(buffered=True)
-    if "guest_flag" in request_data and from_app_flag:
+    if "guest_flag" in request_data:
         guest_flag=request_data["guest_flag"]=="y"
         if guest_flag:
             with open(os.path.join(my_functions.etc_path,"sikutyouson.txt"), 'r', encoding='utf-8', errors='replace') as file:
@@ -843,8 +854,8 @@ def signup_process_app(request: HttpRequest):
     return signup_common(request=request,from_app_flag=True)
 
 
-@csrf_exempt
-def true_signup(request:HttpRequest):
+
+def true_signup_common(request:HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
@@ -867,7 +878,7 @@ def true_signup(request:HttpRequest):
     
     mailaddress=request_data["mailaddress"]
     password=request_data["password"]
-    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     if not my_functions.check_mailaddress_overlap(mailaddress=mailaddress,cursor=cono.cursor):
         cono.terminate_connection()
         response_data["result"]="mailaddress_overlap"
@@ -897,7 +908,11 @@ def true_signup(request:HttpRequest):
     cono.terminate_connection()
     response_data["result"]="success"
     return JsonResponse(response_data)
-
+@csrf_exempt
+def true_signup(request:HttpRequest):
+    return true_signup_common(request=request,from_app_flag=True)
+def true_signup_web(request:HttpRequest):
+    return true_signup_common(request=request,from_app_flag=False)
 
 def login_common(request: HttpRequest,from_app_flag=False):
     response_data={}
@@ -939,8 +954,6 @@ def login_common(request: HttpRequest,from_app_flag=False):
                 cnx.commit()
                 cursor.close()
                 cnx.close()
-                response = redirect_to_toppage
-                new_session.set_cookie(response)
                 response_data["result"]="success"
                 response_data["user_id"]=str(new_session.user_id)
                 response_data["session_id_1"]=str(new_session.value_1)
@@ -948,6 +961,7 @@ def login_common(request: HttpRequest,from_app_flag=False):
                 print("ログイン:user_id="+str(new_session.user_id))
             else:
                 response_data["result"]="incorrect_password"
+                my_functions.my_log("間違ったパスワード+"+mailaddress)
         else:
             response_data["result"]="incorrect_mailaddress"
     else:
@@ -971,6 +985,7 @@ def logout_common(request: HttpRequest,from_app_flag=False):
     cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     print("ログアウト:user_id="+str(cono.session.user_id))
     cono.session.logout(cursor=cono.cursor)
+    cono.cnx.commit()
     return JsonResponse(response_data)
 def logout_process(request: HttpRequest):
     return logout_common(request=request,from_app_flag=False)
@@ -1175,13 +1190,6 @@ def post_common(request: HttpRequest,from_app_flag=False):
         ({}) ;
         """.format(content_id)
         cono.cursor.execute(query)
-        query="""
-        INSERT INTO post_discussion_table
-        (content_id)
-        VALUES
-        ({}) ;
-        """.format(content_id)
-        cono.cursor.execute(query)
         cono.cnx.commit()
         if(image_count>=1):
             index_content=""
@@ -1328,6 +1336,7 @@ def view_count_doubleplus(request: HttpRequest):
 def view_count_doubleplus_app(request: HttpRequest):
     return view_count_doubleplus_common(request=request,from_app_flag=True)
 
+
 def review_post_common(request:HttpRequest,from_app_flag=False):
     try:
         request_data = json.loads(request.body)
@@ -1461,21 +1470,20 @@ def review_post_app(request:HttpRequest):
     return review_post_common(request=request,from_app_flag=True)
 
 
-@csrf_exempt
-def get_my_post(request:HttpRequest):
+def get_my_post_common(request:HttpRequest,from_app_flag=False):
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
         request_data = {}
     response_data={}
-    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     if(cono.session.user_id>=1):
         user_id=cono.session.user_id
         query="select username from user_data_table where user_id={}".format(user_id)
         cono.cursor.execute(query)
         user_data=cono.cursor.fetchone()
         username=user_data[0]
-        user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_conditions=["user_id"])))#何故か重複するので重複排除
+        user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_subjects=["user_id"])))#何故か重複するので重複排除
         posted_post_=my_functions.create_content_dict(
             cursor=cono.cursor,
             content_id_list=user_posted_list,
@@ -1494,13 +1502,16 @@ def get_my_post(request:HttpRequest):
     
     cono.terminate_connection()
     return JsonResponse(response_data)
+@csrf_exempt
+def get_my_post(request:HttpRequest):
+    return get_my_post_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
 def search_process_app(request: HttpRequest):
     response_data={}
     try:
-        request_data = json.loads(request.body)
+        request_data:dict = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
         request_data = {}
         response_data["result"]="request_broken_error"
@@ -1524,46 +1535,27 @@ def search_process_app(request: HttpRequest):
     else:
         my_functions.error_log("297989878297")
         page_number=1
-    
-    if my_functions.check_existence(multi=request_data, keys=["user_id"],allow_empty=False):
-        if my_functions.check_str_is_int(request_data["user_id"]):
-            user_id=int(request_data["user_id"])
-        else:
-            user_id=-1
-            my_functions.error_log("9798987897")
+        
+    if(my_functions.check_existence(multi=request_data,keys=["search_subjects_joined"],allow_empty=False)):
+        search_subjects=request_data["search_subjects_joined"].split(",")
+    elif(my_functions.check_existence(multi=request.GET,keys=["search_sugjects_joined"],allow_empty=False)):#誤字を含んだバージョンの対応
+        search_subjects=request_data["search_sugjects_joined"].split(",")
     else:
-        my_functions.error_log("29798987897")
-        user_id=-1
+        search_subjects=["title","content","overview","tags"]
     
-    cnx=my_functions.connect_to_database()
-    cursor=cnx.cursor(buffered=True)
+    if(not my_functions.check_correct_search_subjects(search_subjects)):
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("37324386"+request_data["search_subjects_joined"])
+        return JsonResponse(response_data)
     
-    if(user_id>=1):
-        if my_functions.check_existence(multi=request_data, keys=["user_id","session_id_1","session_id_2","device_unique_id"],allow_empty=False):
-            query="SELECT user_id FROM user_session_table WHERE user_id=%s and session_id_1=%s and session_id_2=%s and uniqueid=%s;"
-            cursor.execute(query,(str(user_id),request_data["session_id_1"],request_data["session_id_2"],request_data["device_unique_id"]))
-            result=cursor.fetchone()
-            if(result is None):
-                cursor.close()
-                cnx.close()
-                response_data["result"]="disable_session_error"
-                my_functions.error_log("789273497")
-                return JsonResponse(response_data)
-        else:
-            cursor.close()
-            cnx.close()
-            response_data["result"]="request_broken_error"
-            my_functions.error_log("7289273497")
-            return JsonResponse(response_data)
-    
-    search_conditions=["title","content","overview","tags"]
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
     search_word_dict={}
     if(my_functions.check_existence(multi=request_data,keys=["search_words"],allow_empty=False)):
         search_words = request_data["search_words"]
         search_word_dict["search_words"]=search_words
     else:
         search_words="inculde_all"
-        search_conditions.append("for_all")
+        search_subjects.append("for_all")
         search_word_dict["search_words"]=""
     if(my_functions.check_existence(multi=request_data,keys=["search_words_exclude"],allow_empty=False)):
         exclude_words=request_data["search_words_exclude"]
@@ -1571,28 +1563,38 @@ def search_process_app(request: HttpRequest):
     else:
         exclude_words=""
         search_word_dict["search_words_exclude"]=""
-    matched_post_list = my_search.search_post_index(include_text=search_words,exclude_text=exclude_words,search_conditions=search_conditions)
+    matched_post_list = my_search.search_post_index(include_text=search_words,exclude_text=exclude_words,search_subjects=search_subjects)
     displayed_post=my_functions.create_content_dict(
-        cursor=cursor,
+        cursor=cono.cursor,
         content_id_list=matched_post_list,
         amount_of_displayed_post=max_display_number,
         start_number=(page_number-1)*10+1,
         page_number=page_number,
         order=order,
-        user_id=user_id
+        user_id=cono.session.user_id
         )
     response_data={**response_data,**displayed_post}
     response_data["result"]="success"
-    cursor.close()
-    cnx.close()
+    cono.terminate_connection()
     return JsonResponse(response_data)
 
 
-@csrf_exempt
-def get_uni_post_data(request: HttpRequest):
+def get_post_for_web(request: HttpRequest,subject:str):
+    subject_list=["view_history","posted_content","post"]
+    if(subject==subject_list[0]):
+        return get_view_history_common(request=request,from_app_flag=False)
+    elif(subject==subject_list[1]):
+        return get_my_post_common(request=request,from_app_flag=False)
+    elif(subject==subject_list[2]):
+        return get_uni_post_data_common(request=request,from_app_flag=False)
+    return HttpResponse('{'+'}')
+
+
+def get_uni_post_data_common(request: HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
+        print(request_data)
         if("content_id" in request_data):
             if my_functions.check_str_is_int(request_data["content_id"]):
                 content_id=int(request_data["content_id"])
@@ -1609,7 +1611,7 @@ def get_uni_post_data(request: HttpRequest):
         response_data["result"]="request_broken_error"
         my_functions.error_log("374263486")
         return JsonResponse(response_data)
-    cono = connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    cono = connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     max_display_number=10
     displayed_post=my_functions.create_content_dict(
         cursor=cono.cursor,
@@ -1624,6 +1626,9 @@ def get_uni_post_data(request: HttpRequest):
     response_data={**response_data,**displayed_post}
     cono.terminate_connection()
     return JsonResponse(response_data)
+@csrf_exempt
+def get_uni_post_data(request: HttpRequest):
+    return get_uni_post_data_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
@@ -1637,24 +1642,19 @@ def get_discussion_data(request:HttpRequest):#アプリでも使える
         content_id_str=request_data["content_id"]
         cnx=my_functions.connect_to_database()
         cursor=cnx.cursor(buffered=True)
-        query="SELECT content_id FROM post_data_table WHERE content_id=%s;"
+        query="SELECT content_id,comment_ids FROM post_data_table WHERE content_id=%s;"
         data=(content_id_str,)
         cursor.execute(query,data)
         result=cursor.fetchone()
         if(result is not None):
             content_id_str=str(result[0])#念のため
-            query="SELECT comment_ids FROM post_discussion_table WHERE content_id={};".format(content_id_str)
-            cursor.execute(query)          
-            result=cursor.fetchone()
-            if(result[0]!=""):
-                comment_id_list=result[0].split(",")
-                query="SELECT content,parent_comment_id,user_id,post_date,deleted_flag FROM discussion_data_table where comment_id in("
-                for i in comment_id_list:
-                    query+=i+","#comment_id_listの要素はstr
-                query=query[:-1]+");"#[:-1]は最後の,を消すため
+            commnet_ids=result[1]
+            if(commnet_ids!=""):
+                query="""SELECT content,parent_comment_id,user_id,post_date,deleted_flag FROM discussion_data_table where comment_id in({}) ORDER BY FIELD(comment_id, {});
+                """.format(commnet_ids,commnet_ids)
                 cursor.execute(query)
                 results=cursor.fetchall()
-                comment_id_combined="<".join(comment_id_list)
+                comment_id_combined="<".join(commnet_ids.split(","))
                 comment_content_combined=""
                 parent_comment_id_combined=""
                 comment_user_id_combined=""
@@ -1671,7 +1671,7 @@ def get_discussion_data(request:HttpRequest):#アプリでも使える
                     comment_username_combined+=result[0]+"<"
                     comment_date_combined+=i[3].strftime("%Y,%m,%d,%H,%M,%S")+"<"
                     deleted_flag_combined+=i[4]+"<"
-                response_data["amount_of_displayd_comment"]=str(len(comment_id_list))
+                response_data["amount_of_displayd_comment"]=str(len(results))
                 response_data["comment_id_combined"]=comment_id_combined#ここだけ[:-1]いらない
                 response_data["comment_content_combined"]=comment_content_combined[:-1]
                 response_data["parent_comment_id_combined"]=parent_comment_id_combined[:-1]
@@ -1726,7 +1726,7 @@ def add_comment_common(request:HttpRequest,from_app_flag):
         my_functions.error_log("1273231971927",from_app_flag)
         return JsonResponse(response_data)
     
-    if  result is not None and my_functions.check_content(text=comment_content,max_character_count=1000,min_character_count=1):
+    if  result is not None and my_functions.check_content(text=comment_content,max_character_count=4000,min_character_count=1):
         pass
     else:
         cono.terminate_connection()
@@ -1751,7 +1751,6 @@ def add_comment_common(request:HttpRequest,from_app_flag):
         cono.cursor.execute(query,(parent_comment_id_str,))
         result = cono.cursor.fetchone()
         if([result is not None]):
-            print([result[2],parent_comment_id_str])
             if result[1]=="n" and parent_comment_id_str==str(result[2]) and content_id_str==str(result[3]):#ここでcontent_idとparent_comment_idが正しいかを把握
                 parent_comment_deleted_flag=False
                 parent_comment_user_id:int=result[0]
@@ -1797,14 +1796,14 @@ def add_comment_common(request:HttpRequest,from_app_flag):
         (%s) ;"""
     data=[str(comment_id)]
     cono.cursor.execute(query,data)
-    query="SELECT comment_ids FROM post_discussion_table WHERE content_id = {} FOR UPDATE;".format(content_id_str)
+    query="SELECT comment_ids FROM post_data_table WHERE content_id = {} FOR UPDATE;".format(content_id_str)
     cono.cursor.execute(query)
     result=cono.cursor.fetchone()
     if(result[0]==""):
         new_comment_ids=str(comment_id)
     else:
         new_comment_ids=result[0]+","+str(comment_id)
-    query="UPDATE post_discussion_table SET comment_ids=%s WHERE content_id = %s;"#コメントidは被らない
+    query="UPDATE post_data_table SET comment_ids=%s WHERE content_id = %s;"#コメントidは被らない
     data=[new_comment_ids,content_id_str]
     cono.cursor.execute(query,data)
     cono.cnx.commit()
@@ -1882,6 +1881,7 @@ def delete_comment_process(request:HttpRequest):
 @csrf_exempt
 def delete_comment_process_app(request:HttpRequest):
     return delete_comment_common(request=request,from_app_flag=True)
+
 
 def change_user_info_common(request:HttpRequest,from_app_flag=False):
     response_data={}
@@ -2063,12 +2063,8 @@ def change_password_common(request:HttpRequest,from_app_flag=False):
         query="UPDATE user_secret_data_table SET password=%s WHERE user_id = %s;"
         data=(password_new,user_id)
         cono.cursor.execute(query,data)
-        query="DELETE FROM user_session_table WHERE user_id = %s and is_app='n';"
-        data=(user_id,)
-        cono.cursor.execute(query,data)
         cono.cnx.commit()
         response_data={"result":"success"}
-        print("コメント投稿:user_id="+str(cono.session.user_id))
     else:
         response_data={"result":"failed_password"}
     cono.terminate_connection()
@@ -2161,7 +2157,7 @@ def get_user_data_process(request:HttpRequest):
                 response_data["followed_username_combined"]=followed_username_combined
                 
         if(get_posts_title_flag):
-            user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_conditions=["user_id"])))#何故か重複するので重複排除
+            user_posted_list = list(dict.fromkeys(my_search.search_post_index(include_text=str(user_id),search_subjects=["user_id"])))#何故か重複するので重複排除
             displayed_post=my_functions.create_content_dict(
                 cursor=cursor,
                 content_id_list=user_posted_list,
@@ -2284,8 +2280,7 @@ def user_follow_app(request:HttpRequest):
     return user_follow_common(request=request,from_app_flag=True)
 
 
-@csrf_exempt
-def get_view_history_app(request: HttpRequest):
+def get_view_history_common(request: HttpRequest,from_app_flag=False):
     response_data={}
     try:
         request_data = json.loads(request.body)
@@ -2293,7 +2288,7 @@ def get_view_history_app(request: HttpRequest):
         response_data["result"]="request_broken_error"
         my_functions.error_log("2119798")
         return JsonResponse(response_data)
-    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=True)
+    cono=connection_to_user_db(request=request,request_json_data=request_data,from_app_flag=from_app_flag)
     if(cono.session.user_id>=1):
         user_id=cono.session.user_id
         query="select view_history_resent_100 from user_view_history where user_id={};".format(user_id)
@@ -2317,6 +2312,9 @@ def get_view_history_app(request: HttpRequest):
         response_data["result"]="incorrect_session"
     cono.terminate_connection()
     return JsonResponse(response_data)
+@csrf_exempt
+def get_view_history_app(request: HttpRequest):
+    return get_view_history_common(request=request,from_app_flag=True)
 
 
 @csrf_exempt
@@ -2345,6 +2343,7 @@ def report_common(request:HttpRequest,from_app_flag=False):
     try:
         request_data = json.loads(request.body)
     except (ValueError, UnicodeDecodeError):
+        my_functions.error_log("47297493284932798798")
         response_data={"result":"failed_error"}
         return JsonResponse(response_data)
     if(not ("session_id_1" in request_data and
@@ -2394,6 +2393,7 @@ def report_process(request:HttpRequest):
 def report_process_app(request:HttpRequest):
     return report_common(request=request,from_app_flag=True)
 
+
 def delete_user_common(request:HttpRequest,from_app_flag=False):
     response_data={}
     try:
@@ -2441,6 +2441,7 @@ def delete_user_process(request:HttpRequest):
 @csrf_exempt
 def delete_user_process_app(request:HttpRequest):
     return delete_user_common(request=request,from_app_flag=True)
+
 
 @csrf_exempt
 def get_unread_notification_flag(request:HttpRequest):
