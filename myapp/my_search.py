@@ -7,7 +7,7 @@ import os
 import unicodedata
 from whoosh.sorting import FieldFacet
 
-index_dir = str(Path(__file__).resolve().parent) + ("/indices")
+index_dir = os.path.join(Path(__file__).resolve().parent,"indices")
 post_index_schema = Schema(
     content_id=NUMERIC(stored=True),
     title=NGRAMWORDS(minsize=1, maxsize=15),

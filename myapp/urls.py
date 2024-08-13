@@ -154,12 +154,13 @@ urlpatterns = [
     
     path('get_discussion_data/', views.get_discussion_data, name='get_discussion_data'),
     
+    path('get_ai_supplement/',views.get_ai_supplement, name='get_ai_supplement'),
+    
     path('add_comment/', views.add_comment, name='add_comment'),
     path('add_comment/app/', views.add_comment_app, name='add_comment_app'),
     
     path('delete_comment/', views.delete_comment_process, name='delete_comment_process'),
     path('delete_comment/app/', views.delete_comment_process_app, name='delete_comment_process_app'),
-    
     
     path('changeuserinfo/', views.change_user_info_page, name='change_user_info_page'),
     

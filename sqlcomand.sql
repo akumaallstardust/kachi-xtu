@@ -68,7 +68,8 @@ CREATE TABLE post_data_table(
     post_date DATETIME,
     notification_user_ids mediumtext NOT NULL DEFAULT (''),
     deleted_flag varchar(10) NOT NULL DEFAULT "n",
-    comment_ids mediumtext NOT NULL DEFAULT ('')
+    comment_ids mediumtext NOT NULL DEFAULT (''),
+    comment_count int NOT NULL DEFAULT 0
 );
 
 CREATE TABLE deleted_post_data_table AS
@@ -105,6 +106,12 @@ CREATE TABLE post_review_table(
     dislike_count_week int NOT NULL DEFAULT 0,
     dislike_count_month_30 int NOT NULL DEFAULT 0,
     like_dislike_ratio DOUBLE NOT NULL DEFAULT 1
+);
+
+CREATE TABLE post_supplement_table(
+    content_id INT PRIMARY KEY,
+    assist_text mediumtext NOT NULL DEFAULT (''),
+    antonym_text mediumtext NOT NULL DEFAULT (''),
 );
 
 CREATE TABLE discussion_data_table(

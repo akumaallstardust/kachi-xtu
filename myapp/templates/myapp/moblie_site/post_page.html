@@ -1,4 +1,5 @@
 {% extends 'myapp/moblie_site/base.html' %}
+{% load static %}
 {% block title %}
 投稿
 {% endblock %}
@@ -93,7 +94,7 @@
 </div>
 {% endblock %}
 {% block out_of_box %}
-
+<script src="{% static 'myapp/scripts/parts.js' %}"></script>
 <script>
     const main_middle = document.getElementById("main_middle")
     const delimiter = "\u200b"
@@ -113,19 +114,6 @@
     if (user_id <= 0) {
         location.href = ("{% url 'home' %}signup/")
     }
-
-    const content_exclusion_pattern = /(<|>|\u200b|\t|\&lt|\&gt)+/g
-    function censor_content(text) {
-        let censored_text = text.replace(/</g, "＜")
-        censored_text = censored_text.replace(/>/g, "＞")
-        censored_text = censored_text.replace(/\&lt/g, "＆lt")
-        censored_text = censored_text.replace(/\&gt/g, "＆gt")
-        censored_text = censored_text.replace(content_exclusion_pattern, "")
-        censored_text = censored_text.replace(/\n\r/g, "\n")
-        censored_text = censored_text.replace(/\r/g, "\n")
-        return censored_text
-    }
-
     function count_specific_word(text, exclude_word) {
 
         let matches = text.match(new RegExp(exclude_word, "g"))

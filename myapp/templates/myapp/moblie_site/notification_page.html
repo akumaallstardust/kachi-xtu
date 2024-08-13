@@ -28,7 +28,6 @@
             this.box.id = `notification_box_${index + 1}`
             this.box.classList.add(notification["notification_read_flag"] == "n" ? "notification_box_unread" : "notification_box_read")
             this.box.addEventListener("click", () => {
-
                 location.href = this.href
             })
             notification_page_box.appendChild(this.box)

@@ -7,11 +7,21 @@
 {% endblock %}
 {% block content %}
 <div class="index_box">
+    <div class="index_box_s" style="margin-bottom: 0px;">
+        <div class="index_text">1クリックで登録可能</div>
+        <div class="index_text_d">【期間限定】1クリックで登録可能なゲストユーザー機能が利用可能、ゲストユーザーでも全ての機能を使えます<br><span>
+                <div class="riyouki_link_index">
+                    <a class="riyouki_link_index" href="{% url 'home' %}anytext/riyouki/">利用規約</a>
+                </div>
+            </span></div>
+    </div>
+    <button class="Login_button" style="margin-top:0px;margin-bottom:20px;" type="button"
+        onclick="signup_as_guset()">利用規約に同意して登録(ゲスト)</button>
     <div class="index_box_s">
         <div class="index_text">確定コメントキャンペーン</div>
-        <div class="index_text_d">現在アイデアを書き込んだら開発者が確実に改善案などをコメントします。<br><br>
-            思い出してみてください、noteやQiitaではいいねが何十何百と付いている記事でも、コメントが付いている記事はほとんどありません。<br><br>
-            つまり確実にコメントが付くということは、このサービスが世の中のほぼすべての投稿サービスに勝っている点なのです。</div>
+        <div class="index_text_d">アイデアを書き込んだら開発者が確実に具体的なアドバイスをします。<br><br>
+            記事を書いてコメントを得ることはとても難しいですが、このサイトでは確実にコメントが付きます、気軽に投稿してみてください。
+        </div>
     </div>
     <div class="index_box_s">
         <div class="index_text">"Kachi-xtu"について</div>
@@ -28,16 +38,6 @@
                 <p class="index_text_d_h">投稿されたアイデアの利用によって生じた損失については、開発者は責任を負いません</p>
             </span></div>
     </div>
-    <div class="index_box_s" style="margin-bottom: 0px;">
-        <div class="index_text">1クリックで登録可能</div>
-        <div class="index_text_d">期間限定で1クリックで登録可能なゲストユーザー機能が利用可能、ゲストユーザーでも、全ての機能を使えます<br><span>
-            <div class="riyouki_link_index">
-                <a class="riyouki_link_index" href="{% url 'home' %}anytext/riyouki/">利用規約</a>
-            </div>
-            </span></div>
-    </div>
-    <button class="Login_button" style="margin-top:0px;margin-bottom:0px;" type="button"
-        onclick="signup_as_guset()">利用規約に同意して登録(ゲスト)</button>
 </div>
 {% endblock %}
 {% block script %}

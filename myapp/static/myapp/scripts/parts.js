@@ -1,12 +1,13 @@
-var content_exclusion_pattern = /(<|>|\u200b|\t|\&lt|\&gt)+/g;
 var username_exclusion_pattern = />|<| |　|\u200b|&gt;|&lt;|,|\n|\r|\t/g;
 var mailaddress_pattern =
   /^[a-zA-Z0-9_+-]+(.[a-zA-Z0-9_+-]+)*@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}/;
 var password_pattern =
   /^(([a-zA-Z0-9]|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\_|\+|\-|\=|\[|\]|\{|\}|\||\;|\:|\'|\,|\.|\<|\>|\?|\/|\~|\`)+)$/;
+var content_exclusion_pattern = /(<|>|\u200b|\t|\&lt|\&gt|`)+/g;
 function censor_content(text) {
   let censored_text = text.replace(/</g, "＜");
   censored_text = censored_text.replace(/>/g, "＞");
+  censored_text = censored_text.replace(/`/g, "‘");
   censored_text = censored_text.replace(/\&lt/g, "＆lt");
   censored_text = censored_text.replace(/\&gt/g, "＆gt");
   censored_text = censored_text.replace(content_exclusion_pattern, "");
@@ -125,14 +126,26 @@ class post_component {
       this.post_overview_box.appendChild(this.post_overview);
     }
 
+    this.open_content_button_box = document.createElement("div");
+    this.open_content_button_box.classList.add("open_content_button_box");
+    this.post_box.appendChild(this.open_content_button_box);
+
     this.open_content_button = document.createElement("button");
     this.open_content_button.id = `open_content_button_${this.content_id}`;
     this.open_content_button.classList.add("open_content_button");
     this.open_content_button.textContent = "読む";
-    this.post_box.appendChild(this.open_content_button);
+    this.open_content_button_box.appendChild(this.open_content_button);
     this.open_content_button.addEventListener("click", () => {
       this.open_content();
     });
+
+    this.ai_supplement_button = document.createElement("button");
+    this.ai_supplement_button.classList.add("ai_supplement_button");
+    this.ai_supplement_button.textContent = "AI";
+    this.ai_supplement_button.addEventListener("click", () => {
+      this.open_ai_supplement();
+    });
+    this.open_content_button_box.appendChild(this.ai_supplement_button);
 
     this.post_content_box = document.createElement("div");
     this.post_content_box.id = `listed_post_content_box_${this.content_id}`;
@@ -305,6 +318,9 @@ class post_component {
         this.post_tag_box_list[j].classList.add("post_tag_box");
         this.post_tags_box.appendChild(this.post_tag_box_list[j]);
         this.post_tag_list[j] = document.createElement("a");
+        this.post_tag_list[j].href =
+          site_url +
+          `search/?page_number=1&search_subjects_joined=tags&search_words=${this.displayed_tag[j]}&search_words_exclude=&post_order=new_post`;
         this.post_tag_list[j].id = `post_tag_${this.content_id}_${j + 1}`;
         this.post_tag_list[j].classList.add("post_tag");
         this.post_tag_list[j].textContent = "# " + this.displayed_tag[j];
@@ -314,31 +330,43 @@ class post_component {
     if (this.uni_post) {
       this.post_box.style.marginTop = "15px";
       this.open_content_button.style.display = "none";
+      this.ai_supplement_button.style.width = "100%";
       this.post_content.style.borderTopWidth = "0px";
       this.open_content();
-      if (option_category != "") {
-        this.open_comment().then(() => {
-          let open_comment_id = 0;
-          if (option_category == "latest_parent_comment") {
-            open_comment_id =
-              this.parent_comment_list[this.parent_comment_list.length - 1]
-                .comment_id;
-          } else if (option_category == "latest_child_comment") {
-            for (let i = 0; i < this.parent_comment_list.length; i++) {
-              if (
-                this.parent_comment_list[i].comment_id == Number(subject_id)
-              ) {
-                open_comment_id =
-                  this.parent_comment_list[i].child_comment_list[
-                    this.parent_comment_list[i].child_comment_list.length - 1
-                  ].comment_id;
-                i = this.parent_comment_list.length;
+      if(option_category == "open_ai_supplement_assist"){
+
+      }
+      else if(option_category == "open_ai_supplement_antonym"){
+
+      }
+      else if (option_category != "") {
+        if(this,this.comment_count==0){
+          this.open_ai_supplement("antonym")
+        }
+        else{
+          this.open_comment().then(() => {
+            let open_comment_id = 0;
+            if (option_category == "latest_parent_comment") {
+              open_comment_id =
+                this.parent_comment_list[this.parent_comment_list.length - 1]
+                  .comment_id;
+            } else if (option_category == "latest_child_comment") {
+              for (let i = 0; i < this.parent_comment_list.length; i++) {
+                if (
+                  this.parent_comment_list[i].comment_id == Number(subject_id)
+                ) {
+                  open_comment_id =
+                    this.parent_comment_list[i].child_comment_list[
+                      this.parent_comment_list[i].child_comment_list.length - 1
+                    ].comment_id;
+                  i = this.parent_comment_list.length;
+                }
               }
+            } else if ("just_open_comment") {
             }
-          } else if ("just_open_comment") {
-          }
-          this.move_to_comment(open_comment_id);
-        });
+            this.move_to_comment(open_comment_id);
+          });
+        }
       }
     }
   }
@@ -378,12 +406,39 @@ class post_component {
       alert("内容がないよう");
     }
   }
+  async delete_comment(comment_id) {
+    let request_json_data = {
+      session_id_1: session_id_1,
+      session_id_2: session_id_2,
+      comment_id: comment_id,
+    };
+    return fetch(site_url + "delete_comment/", {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json", //JSON形式のデータのヘッダー
+        "X-CSRFToken": csrftoken,
+      },
+      body: JSON.stringify(request_json_data),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        return new Promise((resolve, reject) => {
+          // 非同期処理が成功した場合
+          resolve({
+            result: data["result"],
+          });
+          // 非同期処理が失敗した場合
+          // reject('失敗した理由');
+        });
+      });
+  }
   static parent_comment = class {
     static child_comment = class {
-      constructor(parent_comment_box, comment_datas) {
+      constructor(parent_post, parent_comment_box, comment_datas) {
         const comment_user_id = Number(comment_datas["user_id"]);
         const comment_username = comment_datas["username"];
         const comment_content = comment_datas["content"];
+        this.parent_post = parent_post;
         this.comment_id = Number(comment_datas["comment_id"]);
         this.comment_box = document.createElement("div");
         this.comment_box.classList.add("comment_box");
@@ -409,19 +464,45 @@ class post_component {
         report_comment_button_box.classList.add("report_comment_button_box");
         comment_user_box.appendChild(report_comment_button_box);
 
-        let report_comment_button = document.createElement("button");
-        report_comment_button.id = `report_comment_button${this.comment_id}`;
-        report_comment_button.classList.add("report_comment_button");
-        report_comment_button.textContent = "通報";
-        report_comment_button.addEventListener("click", () => {
-          document.getElementById("report_subject_category_base").value =
-            "comment";
-          document.getElementById("report_subject_id_base").value = String(
-            this.comment_id
-          );
-          document.getElementById("report_form_base").submit();
-        });
-        report_comment_button_box.appendChild(report_comment_button);
+        if (comment_user_id == my_user_id) {
+          let delete_comment_button = document.createElement("button");
+          delete_comment_button.id = `delete_comment_button_${this.comment_id}`;
+          delete_comment_button.classList.add("delete_comment_button");
+          delete_comment_button.textContent = "削除";
+          this.delete_count = 0;
+          const max_delete_count = 3;
+          delete_comment_button.addEventListener("click", () => {
+            if (this.delete_count == 3) {
+              this.parent_post.delete_comment(this.comment_id).then((data) => {
+                if (data["result"] == "success") {
+                  this.comment_box.style.display = "none";
+                }
+              });
+            } else {
+              alert(
+                `後${
+                  max_delete_count - this.delete_count
+                }回押したら削除されます`
+              );
+              this.delete_count++;
+            }
+          });
+          report_comment_button_box.appendChild(delete_comment_button);
+        } else {
+          let report_comment_button = document.createElement("button");
+          report_comment_button.id = `report_comment_button_${this.comment_id}`;
+          report_comment_button.classList.add("report_comment_button");
+          report_comment_button.textContent = "通報";
+          report_comment_button.addEventListener("click", () => {
+            document.getElementById("report_subject_category_base").value =
+              "comment";
+            document.getElementById("report_subject_id_base").value = String(
+              this.comment_id
+            );
+            document.getElementById("report_form_base").submit();
+          });
+          report_comment_button_box.appendChild(report_comment_button);
+        }
 
         let comment_content_div = document.createElement("div");
         comment_content_div.classList.add("comment_content");
@@ -461,19 +542,43 @@ class post_component {
       comment_username_text_link.textContent = comment_username;
       comment_user_box.appendChild(comment_username_text_link);
 
-      let report_comment_button = document.createElement("button");
-      report_comment_button.id = `report_comment_button${this.comment_id}`;
-      report_comment_button.classList.add("report_comment_button");
-      report_comment_button.textContent = "通報";
-      report_comment_button.addEventListener("click", () => {
-        document.getElementById("report_subject_category_base").value =
-          "comment";
-        document.getElementById("report_subject_id_base").value = String(
-          this.comment_id
-        );
-        document.getElementById("report_form_base").submit();
-      });
-      comment_user_box.appendChild(report_comment_button);
+      if (comment_user_id == my_user_id) {
+        let delete_comment_button = document.createElement("button");
+        delete_comment_button.id = `delete_comment_button_${this.comment_id}`;
+        delete_comment_button.classList.add("delete_comment_button");
+        delete_comment_button.textContent = "削除";
+        this.delete_count = 0;
+        const max_delete_count = 3;
+        delete_comment_button.addEventListener("click", () => {
+          if (this.delete_count == 3) {
+            this.parent_post.delete_comment(this.comment_id).then((data) => {
+              if (data["result"] == "success") {
+                this.comment_box.style.display = "none";
+              }
+            });
+          } else {
+            alert(
+              `後${max_delete_count - this.delete_count}回押したら削除されます`
+            );
+            this.delete_count++;
+          }
+        });
+        comment_user_box.appendChild(delete_comment_button);
+      } else {
+        let report_comment_button = document.createElement("button");
+        report_comment_button.id = `report_comment_button_${this.comment_id}`;
+        report_comment_button.classList.add("report_comment_button");
+        report_comment_button.textContent = "通報";
+        report_comment_button.addEventListener("click", () => {
+          document.getElementById("report_subject_category_base").value =
+            "comment";
+          document.getElementById("report_subject_id_base").value = String(
+            this.comment_id
+          );
+          document.getElementById("report_form_base").submit();
+        });
+        comment_user_box.appendChild(report_comment_button);
+      }
 
       let comment_content_div = document.createElement("div");
       comment_content_div.id = `comment_content_${this.comment_id}`;
@@ -553,6 +658,7 @@ class post_component {
               };
               this.child_comment_list[this.child_comment_list.length] =
                 new post_component.parent_comment.child_comment(
+                  this.parent_post,
                   this.child_comment_box,
                   {
                     comment_id: Number(data["comment_id"]),
@@ -571,6 +677,7 @@ class post_component {
         for (let i = 0; i < this.child_comment_data_list.length; i++) {
           this.child_comment_list[i] =
             new post_component.parent_comment.child_comment(
+              this.parent_post,
               this.child_comment_box,
               this.child_comment_data_list[i]
             );
@@ -801,6 +908,122 @@ class post_component {
             this.discussion_box_box.appendChild(
               this.close_discussion_box_button
             );
+          });
+      } else {
+        this.close_comment();
+      }
+    });
+  }
+  open_ai_supplement(option = "antonym") {
+    return new Promise((resolve, reject) => {
+      if (this.discussion_box_open_flag == false) {
+        this.supplement_option = option;
+        this.out_of_main_box.innerHTML = ""; ///一度リセット
+        this.gray_out = document.createElement("div");
+        this.gray_out.classList.add("gray_out_out_of_main");
+        this.out_of_main_box.appendChild(this.gray_out);
+        this.gray_out.addEventListener("click", () => {
+          this.close_comment();
+        });
+        this.out_of_main_box.style.display = "block";
+
+        this.discussion_box_box = document.createElement("div");
+        this.discussion_box_box.className = "discussion_box_box";
+        this.out_of_main_box.appendChild(this.discussion_box_box);
+        this.discussion_box = document.createElement("div");
+        this.discussion_box.style.display = "block";
+        this.discussion_box.id = "discussion_box";
+        this.discussion_box.classList.add("discussion_box");
+        this.discussion_box_opened = true;
+        this.discussion_box_box.appendChild(this.discussion_box);
+        this.ai_option_select_button_box = document.createElement("div");
+        this.ai_option_select_button_box.classList.add(
+          "ai_option_select_button_box"
+        );
+        this.discussion_box.appendChild(this.ai_option_select_button_box);
+        this.ai_option_select_button_assist = document.createElement("button");
+        this.ai_option_select_button_assist.className =
+          option == "assist"
+            ? "ai_option_select_button_selected"
+            : "ai_option_select_button";
+        this.ai_option_select_button_assist.textContent = "アドバイス";
+        this.ai_option_select_button_assist.addEventListener("click", () => {
+          this.open_ai_supplement("assist");
+        });
+        this.ai_option_select_button_box.appendChild(
+          this.ai_option_select_button_assist
+        );
+
+        this.ai_option_select_button_antonym = document.createElement("button");
+        this.ai_option_select_button_antonym.className =
+          option == "antonym"
+            ? "ai_option_select_button_selected"
+            : "ai_option_select_button";
+        this.ai_option_select_button_antonym.textContent = "対義語";
+        this.ai_option_select_button_antonym.addEventListener("click", () => {
+          this.open_ai_supplement("antonym");
+        });
+        this.ai_option_select_button_box.appendChild(
+          this.ai_option_select_button_antonym
+        );
+        this.close_discussion_box_button = document.createElement("button");
+        this.close_discussion_box_button.classList.add(
+          "Close_out_of_main_button"
+        );
+        this.close_discussion_box_button.textContent = "閉じる";
+        this.close_discussion_box_button.addEventListener("click", () => {
+          this.close_comment();
+        });
+        this.discussion_box_box.appendChild(this.close_discussion_box_button);
+        
+        let loading_window = document.createElement("div");
+        loading_window.className = "ai_supplement_loading_box";
+        loading_window.textContent = "読み込み中";
+        this.discussion_box.appendChild(loading_window);
+        let dotCount = 0;
+        const maxDots = 3; // 最大のドットの数
+        const interval = 300; // 更新間隔（ミリ秒）
+        let loadingInterval
+        setTimeout(function () {
+          if (loading_window) {
+            loadingInterval= setInterval(() => {
+              // ドットの数を増やし、最大数に達したら0に戻す
+              dotCount = (dotCount + 1) % (maxDots + 1);
+              if (loading_window) {
+                loading_window.innerText =
+                  "作成中" + "・".repeat(dotCount);
+              }
+              // 表示を更新
+            }, interval);
+          }
+        }, 500); // 500ミリ秒（0.5秒）
+        let request_json_data = {
+          content_id: String(this.content_id),
+          option: option,
+        };
+        fetch(site_url + "get_ai_supplement/", {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json", //JSON形式のデータのヘッダー
+            "X-CSRFToken": csrftoken,
+          },
+          body: JSON.stringify(request_json_data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data["result"] == "success") {
+              if (this.supplement_option == option) {
+                loading_window.remove();
+                loading_window = null;
+                clearInterval(loadingInterval);
+                let ai_supplement_text = document.createElement("div");
+                ai_supplement_text.classList.add("ai_supplement_text");
+                ai_supplement_text.textContent = data["supplement"];
+                this.discussion_box.appendChild(ai_supplement_text);
+              }
+            } else {
+              alert("エラー");
+            }
           });
       } else {
         this.close_comment();

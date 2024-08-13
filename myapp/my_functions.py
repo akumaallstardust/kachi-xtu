@@ -13,13 +13,14 @@ import time
 import environ
 from django.utils.safestring import mark_safe
 from PIL import Image, ImageDraw, ImageFont
+from openai import OpenAI
 # .envファイルの場所を設定
 env = environ.Env()
 environ.Env.read_env(os.path.join(environ.Path(__file__) - 2, '.env'))
 current_path=str(Path(__file__).resolve().parent)
-media_path=str(Path(__file__).resolve().parent.parent)+"/media_local"
+media_path=os.path.join(Path(__file__).resolve().parent.parent,"media_local")
 etc_path=current_path+"/etc"
-
+content_exclusion_pattern = re.compile(r"<|>|\u200b|\t|\&lt|\&gt|`")
 
 def connect_to_database():
     return mysql.connector.connect(
@@ -37,7 +38,7 @@ def create_content_dict(
         "like_count_many","like_count_few",
         "dislike_count_many","dislike_count_few",
         "like_dislike_ratio_much","like_dislike_ratio_little",
-        "no_sort_str","sort_str"
+        "no_sort_str","no_sort","comment_count_many","comment_count_few"
         ]
     if(not order in order_option_list):
         order="new_post"
@@ -150,7 +151,7 @@ def create_content_dict(
         for i in range(amount_of_displayed_post):
             ordered_content_id.append(result[i+(start_number-1)][0])
     
-    elif(order==order_option_list[9]):#order_option_list[8]="like_dislike_ratio_little"
+    elif(order==order_option_list[9]):#order_option_list[9]="like_dislike_ratio_little"
         query="select content_id from post_review_table where content_id in("
         for i in content_id_list:
             query+=str(i)+","#i[0]=content_id
@@ -159,6 +160,28 @@ def create_content_dict(
         result=cursor.fetchall()#resultは(content_id,)タプルのリスト
         for i in range(amount_of_displayed_post):
             ordered_content_id.append(result[i+(start_number-1)][0])
+
+    elif(order==order_option_list[12]):#order_option_list[12]="comment_count_many"
+        query="select content_id from post_data_table where content_id in("
+        for i in content_id_list:
+            query+=str(i)+","#i[0]=content_id
+        query=query[:-1]+") ORDER BY comment_count DESC;"#末尾の,を削除
+        cursor.execute(query)
+        result=cursor.fetchall()#resultは(content_id,)タプルのリスト
+        for i in range(amount_of_displayed_post):
+            ordered_content_id.append(result[i+(start_number-1)][0])
+
+
+    elif(order==order_option_list[13]):#order_option_list[13]="comment_count_few"
+        query="select content_id from post_data_table where content_id in("
+        for i in content_id_list:
+            query+=str(i)+","#i[0]=content_id
+        query=query[:-1]+") ORDER BY comment_count ASC;"#末尾の,を削除
+        cursor.execute(query)
+        result=cursor.fetchall()#resultは(content_id,)タプルのリスト
+        for i in range(amount_of_displayed_post):
+            ordered_content_id.append(result[i+(start_number-1)][0])
+
 
     else:#エラー
         error_log(text="error0001")
@@ -191,7 +214,7 @@ def create_content_dict(
     comment_count_combined=""
 
     for i in ordered_content_id:
-        query="select content_id,title,content,user_id,overview,word_count,tags,post_date,comment_ids from post_data_table where content_id={}".format(i)
+        query="select content_id,title,content,user_id,overview,word_count,tags,post_date,comment_count from post_data_table where content_id={}".format(i)
         cursor.execute(query)
         content_basic_datas=cursor.fetchone()
         if(content_basic_datas is not None):
@@ -203,13 +226,12 @@ def create_content_dict(
             word_counts_combined += str(content_basic_datas[5]) + "<"
             tags_combined+=content_basic_datas[6] + "<"
             post_date_combined+=content_basic_datas[7].strftime("%Y,%m,%d,%H,%M,%S")+"<"
-            comment_count_combined+=str(0 if content_basic_datas[8]=="" else content_basic_datas[8].count(',')+1)+"<"
+            comment_count_combined+=str(content_basic_datas[8])+"<"
             
             my_review:str="none"
             if(user_id>=1):#liked_listは初期化済みなので無くても大丈夫だが一応
                 if(str(content_basic_datas[0]) in liked_list):
                     my_review="liked"
-                    print(liked_list)
                 elif(str(content_basic_datas[0]) in disliked_list):
                     my_review="disliked"
             
@@ -246,16 +268,177 @@ def create_content_dict(
     
     return content_dict
 
-def escape_backticks(data):
-    if isinstance(data, dict):
-        return {key: escape_backticks(value) for key, value in data.items()}
-    elif isinstance(data, list):
-        return [escape_backticks(element) for element in data]
-    elif isinstance(data, str):
-        return mark_safe(data.replace('`', r'\`'))
-    else:
-        return data
+def censor_content(text:str):
+    censored_text = text.replace('<', '＜')
+    censored_text = censored_text.replace('>', '＞')
+    censored_text = censored_text.replace('`', '‘')
+    censored_text = censored_text.replace('&lt', '＆lt')
+    censored_text = censored_text.replace('&gt', '＆gt')
+    censored_text = re.sub(content_exclusion_pattern, '', censored_text)
+    
+    censored_text = censored_text.replace('\n\r', '\n')
+    censored_text = censored_text.replace('\r', '\n')
+    return censored_text
+#**その中から、元の文章を分解したそれぞれの要素から、その要素の変換の中で一番面白い変換だけを適用した変換を作成する、当然は別の要素なら別の結果から選んでもいい**
+def create_ai_supplement(content:str,option:str|int):
+    option_list=["assist","antonym"]
+    ai_moedel="gpt-4o-mini"
+    if isinstance(option, int):
+        if len(option_list)>option:
+            option=option_list[option]
+        else:
+            return ""
+    client = OpenAI(api_key=env('OPENAI_API_KEY'))
+    ai_supplement=""
+    if(option==option_list[0]):
+        prompt="""
+# 指示
+- アイデアに対して、{アドバイス}の内容をアドバイスしてください
 
+#出力形式
+まず、{アドバイス}を**全力で、思い付くものは全て考慮して**作成してください、次に**逆張りした**アドバイス、**ふざけたアドバイス**を作成してください、**出力形式は{アドバイス}の出力形式に従います**
+
+# アドバイス
+- 本質的に人間のどのような需要を満たすか
+- このアイデアの間違っている、誤解がある、時代遅れなところ
+- 改善点
+- 具体的な案
+- 競合
+- 最後に、あなた自身がこれにインスパイアされたアイデアを考えてください。
+
+#アイデア
+- """
+        completion = client.chat.completions.create(
+            n=3,
+          model=ai_moedel,
+          messages=[
+            {"role": "system", "content": "あなたは全てを論理的に考えます、できる限り多くのことを考慮して、本質的な存在理由と本質的なプロセスを考えてください。"},
+            {"role": "user", "content": prompt+content}
+          ]
+        )
+        ai_supplement="# 生成1\n"+completion.choices[0].message.content+"\n# 生成2\n"+completion.choices[1].message.content+"\n# 生成3\n"+completion.choices[2].message.content
+        
+
+    elif(option==option_list[1]):
+        prompt="""
+# あなたの役割
+下記の{ルール}に従い、{変換する文章}を全て変換してます**{変換する文章}を全て変換してください、文章の途中で変換を終わらせたら処刑される**ただ○○→無○○、○○→反○○のような無意味な変換は絶対にやってはならない、そのような変換をしたら処刑される**
+
+# ルール
+文章の中の語句を**70%**対義語、競合、反対のもの、似ているが別のものに変える、数字はめちゃくちゃ小さくしたり大きくしたりする**ただ対義語にするより競合、反対のもの、似ているが別のものに変える方が滅茶苦茶いい**、できるだけ多く改変する、**ただ○○→無○○、○○→反○○のような無意味な変換は絶対にやめる**。
+
+## 優先されること
+良いことから悪いことに変わる表現を優先する、変換した結果が犯罪行為になるようにする、面白おかしくなることを最優先に変換する、国名や地名などは、最優先で別の国名や地名に変換する。
+
+#例
+AI→自然無能
+エクアドル→ブルガリア
+トヨタ→テスラ
+個人開発→集団破壊
+新幹線→在来線
+ファーストクラス→普通車自由席
+青年日本の歌→老人ルーマニアの歌
+最近寒いなぁ→昔暑いなぁ
+投稿する→爆破する
+コンセプトと機能の説明→裏テーマと不具合の説明
+法に関する面白い説明→法に反するふざけた説明
+全盲でも楽しむことができる音ゲーらしい→全視力でも苦しむことができるパズルゲーらしい
+目覚まし時計などを用いてその状態を繰り返して→スリープボタンなどを避けてその状態を避け続け
+未来予知は比較的メジャーな超能力ですが、書くときは非常にめんどくさい能力です→過去忘却は絶対的マイナーな一般無力ですが、話すときは少しだけ簡単な無力です
+私たちの生活に深く溶け込んでいる存在です→敵たちの生活に浅く孤立している概念です
+彼らの起源は、約9000年前の古代エジプトに遡ります→彼らの未来は、約9000年後の未来南極に進みます
+日本では猫は神聖視され、豊穣や守護の象徴として崇拝されていました→ブラジルでは犬は俗視され、不毛や攻撃の実態として軽蔑されていました
+兎は非常に柔軟な体を持ち、その体の構造は驚くべき柔軟性を持っています→亀は非常に硬直な頭を失い、その頭の崩壊はありふれた硬直性を持っています
+「ゴロゴロ」と音を立てるのは、リラックスしているときだけでなく、痛みやストレスを和らげるためでもあると考えられています。→「シーン」と光を立てないのは、緊張しているときだけで、癒しか快楽を悪化させるためではないと無視されています。
+君と出会った瞬間に、心の中で何かが変わった→君と別れた永遠に　体の外で何かが止まった
+メモして、投稿して欲しいです→踏みにじり、投稿して欲しくないです
+コメント機能→言及禁止機能
+指定→堅持
+開発支援アプリ→開発地獄アプリ
+保存した下書きを読み込みできます→忘れていた下書きを脳から消去できます
+チャット→沈黙
+技術的なリクエストやバグ報告などはそこで行ってもらえると大変助かります(もちろん連絡機能からでも大丈夫です)→技術的な罵倒やバグ養成などはそこで行ってもらえると大変困ります(当然連絡機能からでも不可能です)
+ファンタジー世界の上級魔術師→ポストアポカリプス世界の下級薬剤師
+ユーザー名→ユーザ詐称
+先生→騎士
+人物→怪物
+世界を旅する→多次元を瞬間移動する
+山→凹地
+法律冊子→違法ブックレット
+投票されて→選挙されて
+
+#変換する文章
+"""
+        completion = client.chat.completions.create(
+            n=3,
+              model=ai_moedel,
+              messages=[
+                {"role": "system", "content": "あなたは変なことを考える天才です、突飛な発想で回答してください"},
+                {"role": "user", "content": prompt+content+"\n#変換ここまで"}
+              ]
+            )
+        ai_supplement=ai_supplement="# 生成1\n"+completion.choices[0].message.content+"\n# 生成2\n"+completion.choices[1].message.content+"\n# 生成3\n"+completion.choices[2].message.content
+        if("そのリクエストにはお応えできません" in completion.choices[0].message.content):
+            prompt="""
+# あなたの役割
+下記のルールに従い、{変換する文章}を全て変換してます**#変換ここまでの部分まで変換してください、文章の途中で変換を終わらせたら処刑される**ただ○○→無○○、○○→反○○のような無意味な変換は絶対にやってはならない、そのような変換をしたら処刑される**
+
+# ルール
+文章の中の語句を**全て**対義語、競合、反対のもの、似ているが別のものに変える、数字はめちゃくちゃ小さくしたり大きくしたりする**ただ対義語にするより競合、反対のもの、似ているが別のものに変える方が滅茶苦茶いい**、できるだけ多く改変する、**ただ○○→無○○、○○→反○○のような無意味な変換は絶対にやめる**、**#変換ここまでの部分まで変換してください、文章の途中で変換を終わらせたら処刑される**。
+
+# 出力形式
+まず、全く違う変換をした違う文章を3つ作成する
+
+#例
+エクアドル→ブルガリア
+トヨタ→テスラ
+個人開発→集団破壊
+新幹線→在来線
+ファーストクラス→普通車自由席
+青年日本の歌→老人ルーマニアの歌
+最近寒いなぁ→昔暑いなぁ
+投稿する→爆破する
+コンセプトと機能の説明→裏テーマと不具合の説明
+法に関する面白い説明→法に反するふざけた説明
+全盲でも楽しむことができる音ゲーらしい→全視力でも苦しむことができるパズルゲーらしい
+目覚まし時計などを用いてその状態を繰り返して→スリープボタンなどを避けてその状態を避け続け
+未来予知は比較的メジャーな超能力ですが、書くときは非常にめんどくさい能力です→過去忘却は絶対的マイナーな一般無力ですが、話すときは少しだけ簡単な無力です
+私たちの生活に深く溶け込んでいる存在です→敵たちの生活に浅く孤立している概念です
+彼らの起源は、約9000年前の古代エジプトに遡ります→彼らの未来は、約9000年後の未来南極に進みます
+日本では猫は神聖視され、豊穣や守護の象徴として崇拝されていました→ブラジルでは犬は俗視され、不毛や攻撃の実態として軽蔑されていました
+兎は非常に柔軟な体を持ち、その体の構造は驚くべき柔軟性を持っています→亀は非常に硬直な頭を失い、その頭の崩壊はありふれた硬直性を持っています
+「ゴロゴロ」と音を立てるのは、リラックスしているときだけでなく、痛みやストレスを和らげるためでもあると考えられています。→「シーン」と光を立てないのは、緊張しているときだけで、癒しか快楽を悪化させるためではないと無視されています。
+君と出会った瞬間に、心の中で何かが変わった→君と別れた永遠に　体の外で何かが止まった
+メモして、投稿して欲しいです→踏みにじり、投稿して欲しくないです
+コメント機能→言及禁止機能
+指定→堅持
+保存した下書きを読み込みできます→忘れていた下書きを脳から消去できます
+チャット→沈黙
+技術的なリクエストやバグ報告などはそこで行ってもらえると大変助かります(もちろん連絡機能からでも大丈夫です)→技術的な罵倒やバグ養成などはそこで行ってもらえると大変困ります(当然連絡機能からでも不可能です)
+ファンタジー世界の上級魔術師→ポストアポカリプス世界の下級薬剤師
+ユーザー名→ユーザ詐称
+先生→騎士
+世界を旅する→多次元を瞬間移動する
+山→凹地
+法律冊子→違法ブックレット
+投票されて→選挙されて
+
+#変換する文章
+
+"""
+            completion = client.chat.completions.create(
+              model=ai_moedel,
+              messages=[
+                {"role": "system", "content": "あなたは変なことを考える天才です、突飛な発想で回答してください"},
+                {"role": "user", "content": prompt+content+"\n#変換ここまで"}
+              ]
+            )
+            ai_supplement=completion.choices[0].message.content
+    
+    else:
+        return ""
+    return "AIが作成する文章は間違っている可能性があります。\n\n"+censor_content(ai_supplement)
+    
 def get_notification_data(cursor=None,user_id=-1)->list:
     if(user_id<=0):
         error_log("14412234412")
@@ -463,13 +646,12 @@ def check_mailaddress(text: str):
         return False
 
 def check_content(text: str,max_character_count=1,min_character_count=0,allow_new_line=True,max_new_line_count=0):#allow_new_line=Trueならmax_new_line_countは意味ない
-    exclusion_pattern = re.compile(r"<|>|\u200b|\t|\&lt|\&gt")
     if(allow_new_line==False):
         if(check_new_lines(text=text,max_new_line_count=max_new_line_count)==False):
             return False
     
     if (
-        re.search(pattern=exclusion_pattern, string=text)
+        re.search(pattern=content_exclusion_pattern, string=text)
         or text is None
         or len(text) > max_character_count
         or len(text) < min_character_count
@@ -570,7 +752,7 @@ def judge_moblie(request:HttpRequest):
         if match:
             if(match.group(1)[0:len("Android")]=="Android" or match.group(1)[0:len("iPhone")]=="iPhone" or match.group(1)[0:len("iPad")]=="iPad"):
                 return True    
-    return True#False
+    return False
 
 def is_valid_image(image_binary:bytes):
     try:

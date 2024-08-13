@@ -374,19 +374,25 @@ h6 {
 /*ここからindex*/
 
 .index_box {
+  overflow-y: scroll;
   position: relative;
   top: 0vw;
   width: 100%;
-  min-height: calc(100vh - 83px);
+  max-height: calc(100vh - 83px);
   background-color: #f1f3f5;
   padding-top: 10px;
 }
 
 .index_box_s {
+  text-align: center;
   background-color: #282c34;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+
+.index_image{
+
 }
 
 .index_text {
@@ -1165,9 +1171,10 @@ h6 {
   border-bottom-left-radius: 41.6px;
   border-bottom-right-radius: 41.6px;
   border-radius: 0px;
-  border-color: #61dafb;
-  background-color: #ffefb3;
-  border-width: 2px 0px;
+  font-weight: bold;
+  border-color: #5a9fa6;
+  background-color: #ffffff;
+  border-width: 5px 0px;
   border-style: solid;
 }
 
@@ -1490,7 +1497,7 @@ h6 {
   background-color: transparent;
 }
 
-.open_content_button {
+.open_content_button_box{
   display: block;
   margin-right: auto;
   margin-left: auto;
@@ -1498,6 +1505,13 @@ h6 {
   top: 0px;
   width: 100%;
   height: 48px;
+}
+
+.open_content_button {
+  position: absolute;
+  right: 0%;
+  width: calc(100% - 50px);
+  height: 100%;
   border-radius: 0px;
   background-color: #5a9fa6;
   border-color: #5a9fa6;
@@ -1507,6 +1521,22 @@ h6 {
   text-align: center;
   color: #ffffff;
   font-size: 25.6px;
+}
+
+.ai_supplement_button{
+  position: absolute;
+  left: 0%;
+  width: 100px;
+  min-width: 15%;
+  height: 48px;
+  border: 0px solid;
+  border-right-width: 0px;
+  border-right-color: #e0e0e0;
+  text-align: center;
+  font-size: 20px;
+  line-height: 40px;
+  color: #61dafb;
+  background-color: #282c34;
 }
 
 .post_tags_box {
@@ -1581,6 +1611,76 @@ h6 {
   color: #ffffff;
   border-bottom-right-radius:0px;
   border-bottom-left-radius:0px;
+}
+
+.ai_option_select_button_box {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  min-height: 40px; /* 50 * 0.8 */
+  left: 0px;
+  flex-direction: row;
+  border-right-width: 1px;
+  border-color: #e0e0e0;
+  justify-content: left;
+  flex-wrap: wrap;
+  margin-bottom: 0px; /* 15 * 0.8 */
+  font-size: 0px;
+  background-color: #ffffff;
+}
+
+.ai_option_select_button {
+  background-color: #ffffff;
+  display: inline-block;
+  width: 50%;
+  height: 100%;
+  border: 0px solid #41717c;
+  border-bottom-width: 6.4px; /* 8 * 0.8 */
+  border-top-width: 4.4px; /* 8 * 0.8 */
+  border-color: #41717c;
+  color: #555555;
+  font-size: 19.2px; /* 24 * 0.8 */
+  text-align: center;
+  line-height: 40px; /* 50 * 0.8 */
+}
+
+.ai_option_select_button_selected {
+  background-color: #41717c;
+  display: inline-block;
+  width: 50%;
+  height: 100%;
+  border: 0px solid #41717c;
+  border-bottom-width: 6.4px; /* 8 * 0.8 */
+  border-top-width: 4.4px; /* 8 * 0.8 */
+  border-color: #41717c;
+  color: #ffffff;
+  font-size: 19.2px; /* 24 * 0.8 */
+  text-align: center;
+  line-height: 40px; /* 50 * 0.8 */
+}
+
+.ai_supplement_loading_box{
+  height: 120px;
+  width: 100%;
+  text-align: center;
+  font-size: 32px;
+  line-height: 120px;
+  color: #61dafb;
+  background-color: #282c34;
+}
+
+.ai_supplement_text{
+  color: #61dafb;
+  background-color: #282c34;
+  width: calc(100% - 20px);
+  text-align: left;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 10px;
+  font-size: 18px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .add_comment_box {
@@ -1709,6 +1809,22 @@ h6 {
   border-right: 1px solid #e0e0e0;
   border-bottom: 1px solid #e0e0e0;
   color: #41717c;
+  background-color: transparent;
+  font-size: 20px;
+}
+
+.delete_comment_button {
+  position: absolute;
+  right: 0px;
+  width: 80px;
+  height: 40px;
+  line-height: 40px;
+  top: 0px;
+  border: 0px;
+  border-left: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  color: red;
   background-color: transparent;
   font-size: 20px;
 }

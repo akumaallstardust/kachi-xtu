@@ -21,6 +21,7 @@ from pathlib import Path
 from django.views.decorators.csrf import csrf_exempt
 import base64
 import environ
+from openai import OpenAI
 env = environ.Env()
 environ.Env.read_env(os.path.join(environ.Path(__file__) - 2, '.env'))
 site_url:str=env('SITE_URL')
@@ -65,12 +66,19 @@ class connection_to_user_db:  # 基本的にはこれを使ってセッション
         self.cnx.close()
 
     def set_response(
-        self, response: HttpResponse|None=None,request:HttpRequest|None=None,templete:str="",context:dict={}
+        self, response: HttpResponse|None=None,request:HttpRequest|None=None,template_name:str="",context:dict={}
     ) -> HttpResponse:  # セッションの更新とDBとの接続解除、最後のreturn時に使う
         #self.session.update_values(self.cursor)
         self.cnx.commit()  # 必須
         if(response is None):
-            response=render(request=request,template_name=templete,context=my_functions.escape_backticks(context))
+            if(not "username" in context):
+                context["username"]=""
+            if(not "user_id" in context):
+                context["user_id"]=""
+            if(not "unread_notification_flag" in context):
+                context["unread_notification_flag"]=""
+            
+            response=render(request=request,template_name=template_name,context=context)
         self.session.set_cookie(response)
         self.terminate_connection()
         return response
@@ -285,8 +293,6 @@ class session_data:  # 基本的にcconnection_to_user_dbで使う
 
 
 def unauthorized_request(request: HttpRequest):
-    cnx=my_functions.connect_to_database()
-    cursor=cnx.cursor(buffered=True)
     return HttpResponse("assaa")
 
 
@@ -301,19 +307,15 @@ def tekitou(request:HttpRequest):
 
 @csrf_exempt
 def test(request:HttpRequest):
-    print(1/0)
     return(HttpResponse("""asd4818409380"""))
 
 
 def cccontact(request:HttpRequest):
     cono = connection_to_user_db(request=request)
     html_file="myapp/age.html"
-    return cono.set_response(
-        render(
-            request=request,
+    return cono.set_response(request=request,
             template_name=html_file,
             context=cono.session.user_basic_dict,
-        )
     )
 
 
@@ -348,11 +350,9 @@ def index(request: HttpRequest):
         else:
             html_file="myapp/desktop_site/index_no_login.html"
         return cono.set_response(
-            render(
-                request=request,
+            request=request,
                 template_name=html_file,
                 context=cono.session.user_basic_dict,
-            )
         )
 
 
@@ -362,8 +362,7 @@ def post(request: HttpRequest):
         html_file="myapp/moblie_site/post_page.html"
     else:
         html_file="myapp/desktop_site/post_page.html"
-    return cono.set_response(
-        render(request=request, template_name=html_file, context=cono.session.get_full_user_data_dict(cursor=cono.cursor))
+    return cono.set_response(request=request, template_name=html_file, context=cono.session.get_full_user_data_dict(cursor=cono.cursor)
     )
 
 
@@ -373,7 +372,7 @@ def signup(request: HttpRequest):
         html_file="myapp/moblie_site/signup_page.html"
     else:
         html_file="myapp/moblie_site/signup_page.html"
-    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
+    return cono.set_response(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
 def true_signup_page(request:HttpRequest):
@@ -382,7 +381,7 @@ def true_signup_page(request:HttpRequest):
         html_file="myapp/moblie_site/true_signup_page.html"
     else:
         html_file="myapp/moblie_site/true_signup_page.html"
-    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
+    return cono.set_response(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
 def login_page(request: HttpRequest):
@@ -391,7 +390,7 @@ def login_page(request: HttpRequest):
         html_file="myapp/moblie_site/login_page.html"
     else:
         html_file="myapp/moblie_site/login_page.html"
-    return render(request=request, template_name=html_file,context=cono.session.user_basic_dict)
+    return cono.set_response(request=request, template_name=html_file,context=cono.session.user_basic_dict)
 
 
 def my_page(request:HttpRequest):
@@ -408,7 +407,7 @@ def my_page(request:HttpRequest):
                 html_file="myapp/moblie_site/my_page/my_page.html"
             else:
                 html_file="myapp/desktop_site/my_page/my_page.html"
-            return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
+            return cono.set_response(request=request,template_name=html_file,context=mypage_dict_combined)
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
             #    user_view_history=cono.cursor.fetchone()[0].split(",")
@@ -438,7 +437,7 @@ def view_history(request: HttpRequest):
             html_file="myapp/moblie_site/view_history.html"
         else:
             html_file="myapp/moblie_site/view_history.html"
-        response = cono.set_response(response=render(request=request,template_name=html_file,context={**cono.get_full_user_data_dict(),**view_history_content_dict}))
+        response = cono.set_response(request=request,template_name=html_file,context={**cono.get_full_user_data_dict(),**view_history_content_dict})
         return response
     return redirect_to_error_page
 
@@ -467,7 +466,7 @@ def posted_post(request:HttpRequest):
                 html_file="myapp/moblie_site/my_page/posted_content.html"
             else:
                 html_file="myapp/moblie_site/my_page/posted_content.html"
-            return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
+            return cono.set_response(request=request,template_name=html_file,context=mypage_dict_combined)
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
             #    user_view_history=cono.cursor.fetchone()[0].split(",")
@@ -480,13 +479,9 @@ def change_password(request:HttpRequest):
         html_file="myapp/moblie_site/my_page/change_password.html"
     else:
         html_file="myapp/moblie_site/my_page/change_password.html"
-    return cono.set_response(
-        render(
-            request=request,
+    return cono.set_response(request=request,
             template_name=html_file,
-            context=cono.session.user_basic_dict,
-        )
-    )
+            context=cono.session.user_basic_dict,)
 
 
 def display_post_with_option(request: HttpRequest,option:str):
@@ -525,7 +520,7 @@ def display_post_with_option(request: HttpRequest,option:str):
         html_file="myapp/moblie_site/display_post.html"
     else:
         html_file="myapp/desktop_site/display_post.html"
-    response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
+    response = cono.set_response(request=request,template_name=html_file,context=search_dict_conbined)
 
     return response
 
@@ -551,7 +546,7 @@ def display_post(request: HttpRequest, content_id: int):
         search_dict_conbined["option_category"]="just_open_comment"
         search_dict_conbined["subject_id"]="0"
         html_file="myapp/desktop_site/display_post.html"
-    response = cono.set_response(response=render(request=request,template_name=html_file,context=search_dict_conbined))
+    response = cono.set_response(request=request,template_name=html_file,context=search_dict_conbined)
 
     return response
 
@@ -561,10 +556,7 @@ def search(request: HttpRequest):
     max_display_number=10
     if(my_functions.check_existence(multi=request.GET,keys=["post_order"],allow_empty=False)):
         order=request.GET["post_order"]#不正な文字列の判定はcreate_content_dictでやる
-        if(order=="osusume"):
-            order="like_count_many"
     else:
-        my_functions.error_log("293287897")
         order="new_post"
 
     if(my_functions.check_existence(multi=request.GET,keys=["page_number"],allow_empty=False)):
@@ -574,7 +566,6 @@ def search(request: HttpRequest):
             my_functions.error_log("2979839878973")
             page_number=-1
     else:
-        my_functions.error_log("297989878297")
         page_number=1
     search_word_dict={}
     
@@ -624,7 +615,7 @@ def search(request: HttpRequest):
         html_file="myapp/moblie_site/search.html"
     else:
         html_file="myapp/desktop_site/search.html"
-    response = cono.set_response(request=request,templete=html_file,context=search_dict_conbined)
+    response = cono.set_response(request=request,template_name=html_file,context=search_dict_conbined)
 
     return response
 
@@ -673,7 +664,7 @@ def user_page(request: HttpRequest,owner_user_id: int):
             html_file="myapp/moblie_site/user_page.html"
         else:
             html_file="myapp/desktop_site/user_page.html"
-        return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
+        return cono.set_response(request=request,template_name=html_file,context=mypage_dict_combined)
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
             #    user_view_history=cono.cursor.fetchone()[0].split(",")
@@ -690,7 +681,7 @@ def notification_page(request:HttpRequest):
             html_file="myapp/moblie_site/notification_page.html"
         else:
             html_file="myapp/desktop_site/notification_page.html"
-        return cono.set_response(response=render(request=request,template_name=html_file,context=notification_page_dict_combined))
+        return cono.set_response(request=request,template_name=html_file,context=notification_page_dict_combined)
     else:
         return redirect_to_signup
 
@@ -709,7 +700,7 @@ def change_user_info_page(request:HttpRequest):
                 html_file="myapp/moblie_site/my_page/change_user_info.html"
             else:
                 html_file="myapp/moblie_site/my_page/change_user_info.html"#後でデスクトップ版を作る
-            return cono.set_response(response=render(request=request,template_name=html_file,context=mypage_dict_combined))
+            return cono.set_response(request=request,template_name=html_file,context=mypage_dict_combined)
             #if(False):
             #    query="select user_view_history_resent_100 from user_view_history where user_id={}".format(user_id)
             #    user_view_history=cono.cursor.fetchone()[0].split(",")
@@ -725,7 +716,7 @@ def report_page(request:HttpRequest):
         html_file="myapp/moblie_site/abramsreport_page.html"
     else:
         html_file="myapp/moblie_site/abramsreport_page.html"
-    return cono.set_response(response=render(request=request,template_name=html_file,context=report_page_dict_combined))
+    return cono.set_response(request=request,template_name=html_file,context=report_page_dict_combined)
 
 
 def delete_account_page(request:HttpRequest):
@@ -733,14 +724,10 @@ def delete_account_page(request:HttpRequest):
     if(cono.session.is_moblie):
         html_file="myapp/moblie_site/delete_account_page.html"
     else:
-        html_file="myapp//moblie_site/delete_account_page.html"
-    return cono.set_response(
-        render(
-            request=request,
+        html_file="myapp/moblie_site/delete_account_page.html"
+    return cono.set_response(request=request,
             template_name=html_file,
-            context=cono.session.user_basic_dict,
-        )
-    )
+            context=cono.session.user_basic_dict,)
 
 #ここからページ遷移しないやつ
 
@@ -1190,6 +1177,13 @@ def post_common(request: HttpRequest,from_app_flag=False):
         ({}) ;
         """.format(content_id)
         cono.cursor.execute(query)
+        query="""
+        INSERT INTO post_supplement_table
+        (content_id)
+        VALUES
+        ({}) ;
+        """.format(content_id)
+        cono.cursor.execute(query)
         cono.cnx.commit()
         if(image_count>=1):
             index_content=""
@@ -1580,13 +1574,34 @@ def search_process_app(request: HttpRequest):
 
 
 def get_post_for_web(request: HttpRequest,subject:str):
-    subject_list=["view_history","posted_content","post"]
+    subject_list=["view_history","posted_content","post","osusume"]
     if(subject==subject_list[0]):
         return get_view_history_common(request=request,from_app_flag=False)
     elif(subject==subject_list[1]):
         return get_my_post_common(request=request,from_app_flag=False)
     elif(subject==subject_list[2]):
         return get_uni_post_data_common(request=request,from_app_flag=False)
+    elif(subject==subject_list[3]):#後で共通idをlistバックエンド作る
+        try:
+            request_data:dict = json.loads(request.body)
+        except (ValueError, UnicodeDecodeError):
+            request_data = {}
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("374221363876786")
+            return JsonResponse(response_data)
+        cono=connection_to_user_db(request_json_data=request_data,from_app_flag=False,get_unread_notification_flag=False)
+        post_data_=my_functions.create_content_dict(
+            cursor=cono.cursor,
+            content_id_list=[31,16,11,42,41,43],
+            amount_of_displayed_post=1000,
+            start_number=1,
+            page_number=1,
+            order="no_sort",
+            user_id=cono.session.user_id
+            )
+        response_data={**post_data_}
+        response_data["result"]="success"
+        return JsonResponse(response_data)
     return HttpResponse('{'+'}')
 
 
@@ -1692,6 +1707,77 @@ def get_discussion_data(request:HttpRequest):#アプリでも使える
     
     return JsonResponse(response_data)
 
+@csrf_exempt
+def get_ai_supplement(request:HttpRequest):
+    response_data={}
+    try:
+        request_data = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("371324243286")
+        return JsonResponse(response_data)
+    
+    option_list=["assist","antonym"]
+    if my_functions.check_existence(multi=request_data,allow_empty=False,keys=["option","content_id"]):
+        option:str=request_data["option"]
+        
+        if not option in option_list:
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("37132141486")
+            return JsonResponse(response_data)
+        
+        if my_functions.check_str_is_int(request_data["content_id"]):
+            content_id:int=int(request_data["content_id"])
+        else:
+            response_data["result"]="request_broken_error"
+            my_functions.error_log("374143486")
+            return JsonResponse(response_data)
+    else:
+        response_data["result"]="request_broken_error"
+        my_functions.error_log("374424234286")
+        return JsonResponse(response_data)
+    cono=connection_to_user_db(request_json_data=request_data,from_app_flag=False)#ユーザーデータは使わないからどちらでもいい。
+    record_name="assist_text" if option==option_list[0] else "antonym_text"
+    query="select {} from post_supplement_table where content_id={};".format(record_name,content_id)
+    cono.cursor.execute(query)
+    result=cono.cursor.fetchone()
+    if result is None:
+        query="""
+        INSERT INTO post_supplement_table
+        (content_id)
+        VALUES
+        ({}) ;
+        """.format(content_id)
+        cono.cursor.execute(query)
+        result=[""]
+    if(result[0]==""):
+        query="select content_id from post_supplement_table where content_id={};".format(content_id)
+        cono.cursor.execute(query)
+        muda=cono.cursor.fetchone()#多分なくてもいい
+        query="UPDATE post_supplement_table SET {}='作成中です、10秒ほどたってから開き直してください。' where content_id=%s".format(record_name)
+        data=(str(content_id),)
+        cono.cursor.execute(query,data)
+        cono.cnx.commit()
+        query="select title,overview,content from post_data_table where content_id={};".format(content_id)
+        cono.cursor.execute(query)
+        result=cono.cursor.fetchone()
+        if(option==option_list[0]):
+            prompt="タイトル:"+result[0].replace('#', '＃')+("" if result[1]=="" else "\n概要:"+result[1].replace('#', '＃'))+"\n内容:"+result[2].replace('#', '＃')
+        else:
+            prompt=result[0].replace('#', '＃')+("" if result[1]=="" else "\n"+result[1].replace('#', '＃'))+"\n"+result[2].replace('#', '＃')
+        
+        supplement=my_functions.create_ai_supplement(content=prompt,option=option)
+        
+        query="UPDATE post_supplement_table SET {}=%s where content_id=%s".format(record_name)
+        data=(supplement,str(content_id))
+        cono.cursor.execute(query,data)
+        cono.cnx.commit()
+    else:
+        supplement=result[0]
+    cono.terminate_connection()
+    response_data["result"]="success"
+    response_data["supplement"]=supplement
+    return JsonResponse(response_data)
 
 def add_comment_common(request:HttpRequest,from_app_flag):
     try:
@@ -1707,6 +1793,7 @@ def add_comment_common(request:HttpRequest,from_app_flag):
        "content_id" in request_data and
        "comment_content" in request_data and
        "parent_comment_id" in request_data):
+        
         pass#content_idとparent_comment_idが正しいかは後で
     else:
         response_data["result"]="request_broken_error"
@@ -1803,7 +1890,7 @@ def add_comment_common(request:HttpRequest,from_app_flag):
         new_comment_ids=str(comment_id)
     else:
         new_comment_ids=result[0]+","+str(comment_id)
-    query="UPDATE post_data_table SET comment_ids=%s WHERE content_id = %s;"#コメントidは被らない
+    query="UPDATE post_data_table SET comment_ids=%s,comment_count = comment_count + 1 WHERE content_id = %s;"#コメントidは被らない
     data=[new_comment_ids,content_id_str]
     cono.cursor.execute(query,data)
     cono.cnx.commit()
@@ -1813,7 +1900,7 @@ def add_comment_common(request:HttpRequest,from_app_flag):
     query="select username from user_data_table where user_id={};".format(cono.session.user_id)
     cono.cursor.execute(query)
     result=cono.cursor.fetchone()
-    response_data["comment_username"]=result[0]#いる
+    response_data["comment_username"]=result[0]#フロントエンドで使うからいる
     if(parent_comment_id_str=="0"):
         if(parent_content_user_id!=cono.session.user_id):
             my_functions.add_notification_data(subject_category="new_comment",subject_id=int(content_id_str),cursor=cono.cursor,user_id=parent_content_user_id)
@@ -1868,7 +1955,14 @@ def delete_comment_common(request:HttpRequest,from_app_flag=False):
     if(cono.session.user_id==result[0]):
         query="UPDATE discussion_data_table SET content='このコメントは投稿者によって削除されました。',deleted_flag='y' where comment_id={}".format(comment_id)
         cono.cursor.execute(query)
-        cono.cnx.commit()
+        query="select parent_content_id FROM discussion_data_table WHERE comment_id=%s;"
+        cono.cursor.execute(query,(str(comment_id),))
+        result=cono.cursor.fetchone()
+        content_id=result[0]
+        query="UPDATE post_data_table SET comment_count = comment_count - 1  WHERE content_id = %s;"
+        data=[str(content_id)]
+        cono.cursor.execute(query,data)
+        cono.cnx.commit() 
         response_data["result"]="success"
         print("コメント削除:user_id="+str(cono.session.user_id)+"comment_id="+str(comment_id))
     else:
